@@ -38,6 +38,10 @@ src/components/     componentes visuais reutilizáveis (importe de '@/components
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
 src/services/       acesso ao Supabase e a outros serviços externos (sampleData.ts: dados de mentira até a Fase 3)
 src/theme/          cores, espaçamentos, raios e tipografia
+src/services/supabase.ts          cliente do Supabase (getSupabase) e teste de conexão
+src/services/database.types.ts    tipos gerados do banco (não editar à mão)
+supabase/migrations/              todas as mudanças do banco, em ordem (ver supabase/README.md)
+supabase/tests/rls_test.sql       teste das regras de segurança (resultado certo: TESTES_OK)
 ```
 
 O roteiro fala em `app/` para as telas; o Expo SDK 58 usa `src/app/`, que é o que vale aqui.
@@ -60,6 +64,26 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   (`profiles.public_id`, formato `MF-` + 6 caracteres sem 0/O/1/I, ex.: `MF-7K4Q2X`). Aparece na tela
   inicial e em Meus dados, e serve para o admin achar e vincular a pessoa na lista do grupo. Nunca é o `uuid` interno.
 - Timer do torneio é baseado no horário de início do nível salvo no Supabase (nunca um contador local).
+
+## Regras do banco (Supabase)
+
+- Toda mudança no banco é uma migration nova em `supabase/migrations/` (aplicada pelo MCP do Supabase,
+  arquivo com a versão que o Supabase registrou). Depois: gerar de novo `database.types.ts` e rodar
+  `supabase/tests/rls_test.sql` (precisa dar `TESTES_OK`), acrescentando testes para a regra nova.
+- Toda tabela nova: `enable row level security` + políticas na mesma migration. Quem não tem login não
+  acessa tabela nenhuma; o único acesso sem login é a função `get_panel(código)`.
+- Funções novas em `public` não têm permissão por padrão: dê `grant execute ... to authenticated` explicitamente.
+- Quem vê o quê: membro do grupo lê tudo do grupo; admin edita grupo, membros e lista de jogadores;
+  qualquer membro cria jogo e vira o host; só o host altera os dados do jogo (host ou admin alteram `games`);
+  no acerto, quem paga marca `paid_at` e quem recebe marca `received_at`.
+- Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
+  `find_profile_by_public_id` (via `supabase.rpc`).
+- `profiles`: selecione colunas explícitas, nunca `select('*')`. A data de nascimento é privada (sem permissão
+  de leitura) e só o dono lê, por `my_birth_date()`. O cadastro envia `display_name` e `birth_date` em
+  `options.data` do `signUp`; o banco recusa menor de 18.
+- Kit de fichas guarda o **valor de face** (25, 100, 500...), sem unidade. No torneio é ponto; no cash a
+  conversão para reais vem do buy-in de cada jogo (calculada em `src/lib`, sem arredondar no meio).
+- Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
 
 ## Segredos
 
@@ -91,7 +115,7 @@ Instale dependências com `npx expo install <pacote>` (escolhe a versão compat�
 
 - [x] Fase 0 — Preparação
 - [x] Fase 1 — Esqueleto do app: projeto, pastas, telas navegáveis (tela inicial com perfil + grupos), tema e componentes; testada no iPhone em 24/11
-- [ ] Fase 2 — Banco de dados no Supabase (tabelas, RLS, cliente em `src/services/`)
+- [ ] Fase 2 — Banco de dados: 17 tabelas, RLS testado (36 verificações), cliente no app; falta o dono ver "Conectado ao servidor" no iPhone
 - [ ] Fase 3 — Login, grupos, jogadores e kit
 - [ ] Fase 4 — Cash game
 - [ ] Fase 5 — Torneio com várias mesas
