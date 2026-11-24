@@ -88,7 +88,7 @@ Instale dependências com `npx expo install <pacote>` (escolhe a versão compat�
 ## Estado
 
 - [x] Fase 0 — Preparação
-- [ ] Fase 1 — Esqueleto do app: código pronto (projeto, pastas, telas vazias navegáveis, tema e componentes); falta o dono conferir no iPhone
+- [x] Fase 1 — Esqueleto do app: projeto, pastas, telas navegáveis (tela inicial com perfil + grupos), tema e componentes; testada no iPhone em 24/11
 - [ ] Fase 2 — Banco de dados no Supabase (tabelas, RLS, cliente em `src/services/`)
 - [ ] Fase 3 — Login, grupos, jogadores e kit
 - [ ] Fase 4 — Cash game
