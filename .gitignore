@@ -41,3 +41,8 @@ example
 # generated native folders
 /ios
 /android
+
+# variáveis de ambiente (chaves do Supabase) — nunca no GitHub
+.env
+.env.*
+!.env.example
