@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Screen, TextField } from '@/components';
+import { AppText, Button, Screen, ServerStatusBadge, TextField } from '@/components';
 import { colors, spacing } from '@/theme';
 
 /** Login / cadastro. Fase 3: e-mail e senha pelo Supabase Auth; Apple e Google depois do TestFlight. */
@@ -16,6 +16,7 @@ export default function LoginScreen() {
         <>
           <Button title="Entrar" onPress={() => router.replace('/groups')} />
           <Button title="Criar conta" variant="ghost" onPress={() => router.replace('/groups')} />
+          <ServerStatusBadge />
         </>
       }
     >
@@ -44,7 +45,7 @@ export default function LoginScreen() {
         secureTextEntry
         autoComplete="password"
         textContentType="password"
-        hint="Fase 1: os botões só navegam, o login de verdade chega na Fase 3."
+        hint="Por enquanto os botões só navegam: o login de verdade chega na Fase 3."
       />
     </Screen>
   );
