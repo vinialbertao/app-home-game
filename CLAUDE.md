@@ -80,7 +80,9 @@ Instale dependências com `npx expo install <pacote>` (escolhe a versão compat�
 
 ## Como trabalhar
 
-- Uma fase (ou parte de fase) por sessão. Plano antes do código; o dono revisa e aprova.
+- Uma fase de cada vez, todas na mesma conversa. Plano antes do código; o dono revisa e aprova.
+- Toda decisão vai na hora para este arquivo ou para o roteiro: nada pode depender da memória da conversa.
+  Se a conversa ficar pesada, o dono abre uma nova e tudo continua a partir daqui.
 - Commits pequenos, com mensagens claras em português, feitos direto na `main` do GitHub.
 - Cada fase termina testada no iPhone pelo Expo Go antes de começar a próxima.
 - Explique o código quando o dono pedir: ele está aprendendo React Native no caminho.
@@ -97,5 +99,6 @@ Instale dependências com `npx expo install <pacote>` (escolhe a versão compat�
 - [ ] Fase 7 — Testes e distribuição
 - [ ] Fase 8 — Torneio de teste com os amigos
 
-Decisões em aberto: conta da Apple (pessoa física ou RFVV), data do torneio de teste, nome definitivo.
+Decisões tomadas: conta da Apple Developer como pessoa física (24/11).
+Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
