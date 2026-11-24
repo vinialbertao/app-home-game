@@ -29,14 +29,14 @@ sem combinar antes: isso exige development build (EAS) e muda o fluxo de teste.
 src/app/            telas (Expo Router: cada arquivo é uma rota)
   index.tsx         redireciona (hoje sempre para /login)
   login.tsx         Login / cadastro
-  groups/index.tsx  Meus grupos
+  groups/index.tsx  Tela inicial: perfil (foto, nome, ID, botão "Meus dados") + Meus grupos
   groups/[groupId]/index.tsx       Tela do grupo
   groups/[groupId]/cash.tsx        Cash game
   groups/[groupId]/tournament.tsx  Torneio
-  profile.tsx       Meu perfil (botão "Perfil" no cabeçalho)
+  profile.tsx       Meus dados (foto, nome, ID, Pix, histórico)
 src/components/     componentes visuais reutilizáveis (importe de '@/components')
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
-src/services/       acesso ao Supabase e a outros serviços externos
+src/services/       acesso ao Supabase e a outros serviços externos (sampleData.ts: dados de mentira até a Fase 3)
 src/theme/          cores, espaçamentos, raios e tipografia
 ```
 
@@ -56,6 +56,9 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   dinheiro e destaque. Fonte do sistema. Números (R$, fichas, timer) com `variant="number"` (algarismos fixos).
 - Área de toque mínima de 48 pt; todo botão e cartão clicável tem `accessibilityRole`/`accessibilityLabel`.
 - Interface em português do Brasil. Código (nomes de arquivos, rotas, variáveis) em inglês. Commits em português.
+- **ID do jogador:** toda conta tem um ID público, único e que nunca muda, gerado no cadastro
+  (`profiles.public_id`, formato `MF-` + 6 caracteres sem 0/O/1/I, ex.: `MF-7K4Q2X`). Aparece na tela
+  inicial e em Meus dados, e serve para o admin achar e vincular a pessoa na lista do grupo. Nunca é o `uuid` interno.
 - Timer do torneio é baseado no horário de início do nível salvo no Supabase (nunca um contador local).
 
 ## Segredos
