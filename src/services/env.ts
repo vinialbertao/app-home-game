@@ -4,9 +4,9 @@
  */
 export const env = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
-  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+  supabasePublishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
 };
 
 export function isSupabaseConfigured(): boolean {
-  return env.supabaseUrl.length > 0 && env.supabaseAnonKey.length > 0;
+  return env.supabaseUrl.length > 0 && env.supabasePublishableKey.length > 0;
 }

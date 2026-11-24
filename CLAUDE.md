@@ -64,8 +64,8 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 ## Segredos
 
 - Chaves ficam em `.env` (fora do GitHub). Modelo em `.env.example`.
-- No app só entram `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` (publishable). Elas ficam
-  visíveis dentro do app: a segurança vem do RLS no banco. A chave `service_role` nunca entra no app nem no repositório.
+- No app só entram `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_...`). Elas ficam
+  visíveis dentro do app: a segurança vem do RLS no banco. A chave secret (`sb_secret_...`, antiga `service_role`) nunca entra no app nem no repositório.
 
 ## Comandos
 
