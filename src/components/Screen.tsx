@@ -10,10 +10,12 @@ type Props = {
   scroll?: boolean;
   /** Rodapé fixo, por exemplo o botão principal da tela. */
   footer?: ReactNode;
+  /** Respeita o entalhe do topo. Use em telas sem cabeçalho (ex.: a inicial). */
+  withTopInset?: boolean;
 };
 
 /** Base de toda tela: fundo, margens, área segura e teclado. */
-export function Screen({ children, scroll = true, footer }: Props) {
+export function Screen({ children, scroll = true, footer, withTopInset = false }: Props) {
   const content = scroll ? (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {children}
@@ -23,7 +25,7 @@ export function Screen({ children, scroll = true, footer }: Props) {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.safe} edges={withTopInset ? ['top', 'bottom', 'left', 'right'] : ['bottom', 'left', 'right']}>
       <KeyboardAvoidingView
         style={styles.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

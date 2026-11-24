@@ -18,6 +18,7 @@ export const colors = {
   primary: '#2EA36B',
   primaryPressed: '#258456',
   onPrimary: '#04140C',
+  primarySoft: 'rgba(46, 163, 107, 0.15)',
 
   gold: '#E5B84B',
   danger: '#E5534B',
