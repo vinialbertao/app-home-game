@@ -30,11 +30,11 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="groups/index" options={{ title: 'Meus grupos' }} />
+        <Stack.Screen name="groups/index" options={{ headerShown: false, title: 'Início' }} />
         <Stack.Screen name="groups/[groupId]/index" options={{ title: 'Grupo' }} />
         <Stack.Screen name="groups/[groupId]/cash" options={{ title: 'Cash game' }} />
         <Stack.Screen name="groups/[groupId]/tournament" options={{ title: 'Torneio' }} />
-        <Stack.Screen name="profile" options={{ title: 'Meu perfil' }} />
+        <Stack.Screen name="profile" options={{ title: 'Meus dados' }} />
       </Stack>
     </ThemeProvider>
   );
