@@ -4,7 +4,7 @@ App de home game de poker (cash e torneio) para grupos de amigos. React Native +
 
 ## Rodar no iPhone
 
-1. `npm install` (só na primeira vez ou quando o `package.json` mudar)
+1. `npm ci` (na primeira vez e depois de todo `git pull` que mudar o `package.json`)
 2. Copie `.env.example` para `.env` (as chaves entram na Fase 2)
 3. `npm start`
 4. Aponte a câmera do iPhone para o QR code e abra no **Expo Go**
