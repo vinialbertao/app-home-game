@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -83,7 +83,8 @@ function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) 
     saveKit.mutate(
       { current: kit, denominations: result.denominations },
       {
-        onSuccess: () => setMessage({ text: 'Kit salvo.', tone: 'success' }),
+        // Volta para a tela do grupo, que já mostra o resumo do kit atualizado
+        onSuccess: () => router.back(),
         onError: (e) => setMessage({ text: e.message, tone: 'error' }),
       },
     );
