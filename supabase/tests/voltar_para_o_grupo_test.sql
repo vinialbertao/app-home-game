@@ -1,5 +1,5 @@
--- Teste: "Voltar para a lista" (restore_player). Quem o admin tirou do grupo volta como membro;
--- quem nunca aceitou o convite ou saiu sozinho não entra; só o admin usa.
+-- Teste: "Voltar para a lista" (restore_player). Quem o admin tirou do grupo volta como membro (e não
+-- volta sozinho pelo convite); quem nunca aceitou o convite ou saiu sozinho não entra; só o admin usa.
 -- Resultado esperado: erro "TESTES_OK: 5 verificações" (tudo é desfeito no fim).
 do $$
 declare
@@ -60,13 +60,18 @@ begin
   end if;
   checks := checks + 1;
 
-  -- Tirar de novo e Bruno entrar pelo convite também limpa a anotação
+  -- Tirado de novo, Bruno não volta pelo convite; Dani (saiu sozinha) volta
   delete from public.group_members where group_id = g and user_id = b;
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  begin
+    perform public.join_group(invite);
+    raise exception 'FALHA: quem foi removido voltou pelo convite';
+  exception when insufficient_privilege then null;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
   perform public.join_group(invite);
-  perform set_config('role', 'postgres', true);
-  if exists (select 1 from private.group_removed_members where group_id = g and user_id = b) then
-    raise exception 'FALHA: a anotação de removido ficou depois de entrar pelo convite';
+  if not exists (select 1 from public.group_members where group_id = g and user_id = d) then
+    raise exception 'FALHA: quem saiu sozinho não conseguiu voltar pelo convite';
   end if;
   checks := checks + 1;
 

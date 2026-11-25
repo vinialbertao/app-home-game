@@ -29,6 +29,9 @@ export type GroupDetails = {
 function rpcErrorMessage(error: { message?: string } | null, fallback: string): string {
   const message = error?.message ?? '';
   if (message.includes('Convite inválido')) return 'Código não encontrado. Confira e tente de novo.';
+  if (message.includes('Removido do grupo')) {
+    return 'Você foi removido deste grupo. Só o admin pode te trazer de volta.';
+  }
   if (message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch')) {
     return 'Sem conexão com o servidor. Confira a internet.';
   }

@@ -207,7 +207,7 @@ function EditPlayerForm({
     if (!member) return;
     Alert.alert(
       "Remover do grupo?",
-      `${member.displayName} sai do grupo e perde o acesso aos jogos. Os jogos que já jogou continuam no histórico.`,
+      `${member.displayName} sai do grupo, perde o acesso aos jogos e não volta pelo convite (só você traz de volta, em “Fora da lista”). Os jogos que já jogou continuam no histórico.`,
       [
         { text: "Cancelar", style: "cancel" },
         {

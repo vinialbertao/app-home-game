@@ -1,5 +1,5 @@
--- Teste: "Remover de vez" (players.archived_at). Só nome inativo; o histórico continua; quem volta
--- pelo convite tem o nome de volta; restore_player desfaz.
+-- Teste: "Remover de vez" (players.archived_at). Só nome inativo; o histórico continua; quem foi removido
+-- não volta pelo convite; restore_player desfaz.
 -- Resultado esperado: erro "TESTES_OK: 5 verificações" (tudo é desfeito no fim).
 do $$
 declare
@@ -44,11 +44,18 @@ begin
   end if;
   checks := checks + 1;
 
-  -- Bruno volta pelo convite: o nome dele volta ativo, com a conta
+  -- Bruno não volta pelo convite; o admin traz de volta e o nome volta ativo, com a conta
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
-  perform public.join_group(invite);
-  if not exists (select 1 from public.players where id = p_b and active and archived_at is null and profile_id = b) then
-    raise exception 'FALHA: o nome não voltou quando a pessoa entrou de novo';
+  begin
+    perform public.join_group(invite);
+    raise exception 'FALHA: quem foi removido voltou pelo convite';
+  exception when insufficient_privilege then null;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.restore_player(p_b);
+  if not exists (select 1 from public.players where id = p_b and active and archived_at is null and profile_id = b)
+     or not exists (select 1 from public.group_members where group_id = g and user_id = b) then
+    raise exception 'FALHA: o admin não trouxe a pessoa de volta';
   end if;
   checks := checks + 1;
 

@@ -1,10 +1,20 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 
-import { AppText, Avatar, Button, Card, EmptyState, FormMessage, LoadingState, Screen, TextField } from '@/components';
-import { isOutsideGroup } from '@/lib/playerId';
-import { useGroup } from '@/services/groups';
+import {
+  AppText,
+  Avatar,
+  Button,
+  Card,
+  EmptyState,
+  FormMessage,
+  LoadingState,
+  Screen,
+  TextField,
+} from "@/components";
+import { isOutsideGroup } from "@/lib/playerId";
+import { useGroup } from "@/services/groups";
 import {
   useAddPlayer,
   useMembers,
@@ -12,9 +22,9 @@ import {
   useRemoveFromGroup,
   type Member,
   type Player,
-} from '@/services/players';
-import { useUserId } from '@/services/session';
-import { colors, spacing } from '@/theme';
+} from "@/services/players";
+import { useUserId } from "@/services/session";
+import { colors, spacing } from "@/theme";
 
 /** Lista de jogadores: todos veem; o admin adiciona, edita e liga as contas aos nomes. */
 export default function PlayersScreen() {
@@ -25,33 +35,44 @@ export default function PlayersScreen() {
   const addPlayer = useAddPlayer(groupId);
   const removeFromGroup = useRemoveFromGroup(groupId);
   const myId = useUserId();
-  const [newName, setNewName] = useState('');
+  const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   if (!group.data || !players.data) {
     return (
       <Screen>
-        <LoadingState error={group.error ?? players.error} onRetry={() => players.refetch()} />
+        <LoadingState
+          error={group.error ?? players.error}
+          onRetry={() => players.refetch()}
+        />
       </Screen>
     );
   }
 
-  const isAdmin = group.data.role === 'admin';
-  const linkedIds = new Set(players.data.map((p) => p.profileId).filter(Boolean));
+  const isAdmin = group.data.role === "admin";
+  const linkedIds = new Set(
+    players.data.map((p) => p.profileId).filter(Boolean),
+  );
   const pending = members.data?.filter((m) => !linkedIds.has(m.userId)) ?? [];
   const memberIds = members.data?.map((m) => m.userId);
-  const outside = (player: Player) => memberIds !== undefined && isOutsideGroup(player.profileId, memberIds);
+  const outside = (player: Player) =>
+    memberIds !== undefined && isOutsideGroup(player.profileId, memberIds);
   const active = players.data.filter((p) => p.active);
   const inactive = players.data.filter((p) => !p.active);
 
   function handleAdd() {
     const name = newName.trim();
-    if (!name) return setError('Digite o nome do jogador.');
-    if (players.data?.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+    if (!name) return setError("Digite o nome do jogador.");
+    if (
+      players.data?.some((p) => p.name.toLowerCase() === name.toLowerCase())
+    ) {
       return setError(`"${name}" já está na lista.`);
     }
     setError(null);
-    addPlayer.mutate({ name }, { onSuccess: () => setNewName(''), onError: (e) => setError(e.message) });
+    addPlayer.mutate(
+      { name },
+      { onSuccess: () => setNewName(""), onError: (e) => setError(e.message) },
+    );
   }
 
   function addMemberAsPlayer(member: Member) {
@@ -63,14 +84,22 @@ export default function PlayersScreen() {
   }
 
   function confirmRemoveMember(member: Member) {
-    Alert.alert('Remover do grupo?', `${member.displayName} sai do grupo e perde o acesso aos jogos.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => removeFromGroup.mutate({ userId: member.userId }, { onError: (e) => setError(e.message) }),
-      },
-    ]);
+    Alert.alert(
+      "Remover do grupo?",
+      `${member.displayName} sai do grupo, perde o acesso aos jogos e não volta pelo convite. Só você traz de volta, em “Fora da lista”.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Remover",
+          style: "destructive",
+          onPress: () =>
+            removeFromGroup.mutate(
+              { userId: member.userId, displayName: member.displayName },
+              { onError: (e) => setError(e.message) },
+            ),
+        },
+      ],
+    );
   }
 
   return (
@@ -79,12 +108,17 @@ export default function PlayersScreen() {
         <View style={styles.section}>
           <AppText variant="heading">Entraram pelo convite</AppText>
           <AppText variant="caption">
-            Ligue cada pessoa a um nome que já está na lista, ou adicione como jogador novo.
+            Ligue cada pessoa a um nome que já está na lista, ou adicione como
+            jogador novo.
           </AppText>
           {pending.map((member) => (
             <Card key={member.userId}>
               <View style={styles.row}>
-                <Avatar name={member.displayName} photoUrl={member.avatarUrl} size={40} />
+                <Avatar
+                  name={member.displayName}
+                  photoUrl={member.avatarUrl}
+                  size={40}
+                />
                 <View style={styles.flex}>
                   <AppText variant="label">{member.displayName}</AppText>
                   <AppText variant="caption">ID {member.publicId}</AppText>
@@ -101,13 +135,17 @@ export default function PlayersScreen() {
                 variant="ghost"
                 onPress={() =>
                   router.push({
-                    pathname: '/groups/[groupId]/players/link',
+                    pathname: "/groups/[groupId]/players/link",
                     params: { groupId, userId: member.userId },
                   })
                 }
               />
               {member.userId !== myId ? (
-                <Button title="Remover do grupo" variant="danger" onPress={() => confirmRemoveMember(member)} />
+                <Button
+                  title="Remover do grupo"
+                  variant="danger"
+                  onPress={() => confirmRemoveMember(member)}
+                />
               ) : null}
             </Card>
           ))}
@@ -115,13 +153,22 @@ export default function PlayersScreen() {
       ) : null}
 
       <View style={styles.section}>
-        <AppText variant="heading">
-          Jogadores ({active.length})
-        </AppText>
+        <AppText variant="heading">Jogadores ({active.length})</AppText>
         {active.length === 0 ? (
-          <EmptyState title="Lista vazia" message={isAdmin ? 'Adicione os nomes de quem joga.' : undefined} />
+          <EmptyState
+            title="Lista vazia"
+            message={isAdmin ? "Adicione os nomes de quem joga." : undefined}
+          />
         ) : (
-          active.map((player) => <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} outside={outside(player)} />)
+          active.map((player) => (
+            <PlayerRow
+              key={player.id}
+              groupId={groupId}
+              player={player}
+              isAdmin={isAdmin}
+              outside={outside(player)}
+            />
+          ))
         )}
       </View>
 
@@ -138,7 +185,12 @@ export default function PlayersScreen() {
             onSubmitEditing={handleAdd}
             hint="Quem ainda não tem o app entra só com o nome."
           />
-          <Button title="Adicionar" variant="secondary" onPress={handleAdd} loading={addPlayer.isPending} />
+          <Button
+            title="Adicionar"
+            variant="secondary"
+            onPress={handleAdd}
+            loading={addPlayer.isPending}
+          />
         </View>
       ) : null}
       <FormMessage message={error} />
@@ -148,10 +200,18 @@ export default function PlayersScreen() {
           <AppText variant="heading">Fora da lista ({inactive.length})</AppText>
           <AppText variant="caption">
             Saíram, mas continuam no histórico dos jogos.
-            {isAdmin ? ' Toque no nome para voltar à lista ou remover de vez.' : ''}
+            {isAdmin
+              ? " Toque no nome para voltar à lista ou remover de vez."
+              : ""}
           </AppText>
           {inactive.map((player) => (
-            <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} outside={false} />
+            <PlayerRow
+              key={player.id}
+              groupId={groupId}
+              player={player}
+              isAdmin={isAdmin}
+              outside={false}
+            />
           ))}
         </View>
       ) : null}
@@ -159,15 +219,20 @@ export default function PlayersScreen() {
   );
 }
 
-type RowProps = { groupId: string; player: Player; isAdmin: boolean; outside: boolean };
+type RowProps = {
+  groupId: string;
+  player: Player;
+  isAdmin: boolean;
+  outside: boolean;
+};
 
 function PlayerRow({ groupId, player, isAdmin, outside }: RowProps) {
   const details = [
-    player.publicId ? `Conta ${player.publicId}` : 'Sem conta no app',
-    player.pixKey ? 'Pix cadastrado' : null,
+    player.publicId ? `Conta ${player.publicId}` : "Sem conta no app",
+    player.pixKey ? "Pix cadastrado" : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(" · ");
 
   const content = (
     <View style={styles.row}>
@@ -192,7 +257,10 @@ function PlayerRow({ groupId, player, isAdmin, outside }: RowProps) {
     <Card
       accessibilityLabel={`Editar ${player.name}`}
       onPress={() =>
-        router.push({ pathname: '/groups/[groupId]/players/[playerId]', params: { groupId, playerId: player.id } })
+        router.push({
+          pathname: "/groups/[groupId]/players/[playerId]",
+          params: { groupId, playerId: player.id },
+        })
       }
     >
       {content}
@@ -202,7 +270,7 @@ function PlayerRow({ groupId, player, isAdmin, outside }: RowProps) {
 
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   flex: { flex: 1, gap: 2 },
   inactive: { color: colors.textMuted },
   warning: { color: colors.warning },

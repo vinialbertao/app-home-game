@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { queryClient, queryKeys } from './queryClient';
-import { getSupabase } from './supabase';
+import { queryClient, queryKeys } from "./queryClient";
+import { getSupabase } from "./supabase";
 
 export type Player = {
   id: string;
@@ -15,7 +15,7 @@ export type Player = {
 
 export type Member = {
   userId: string;
-  role: 'admin' | 'member';
+  role: "admin" | "member";
   displayName: string;
   publicId: string;
   avatarUrl: string | null;
@@ -39,12 +39,12 @@ export function usePlayers(groupId: string) {
     queryKey: queryKeys.players(groupId),
     queryFn: async (): Promise<Player[]> => {
       const { data, error } = await getSupabase()
-        .from('players')
-        .select('id, name, pix_key, active, profile_id, profiles(public_id)')
-        .eq('group_id', groupId)
-        .is('archived_at', null)
-        .order('active', { ascending: false })
-        .order('name');
+        .from("players")
+        .select("id, name, pix_key, active, profile_id, profiles(public_id)")
+        .eq("group_id", groupId)
+        .is("archived_at", null)
+        .order("active", { ascending: false })
+        .order("name");
       if (error) throw error;
       return data.map((p) => ({
         id: p.id,
@@ -64,31 +64,35 @@ export function useMembers(groupId: string) {
     queryKey: queryKeys.members(groupId),
     queryFn: async (): Promise<Member[]> => {
       const { data, error } = await getSupabase()
-        .from('group_members')
-        .select('user_id, role, profiles(display_name, public_id, avatar_url)')
-        .eq('group_id', groupId);
+        .from("group_members")
+        .select("user_id, role, profiles(display_name, public_id, avatar_url)")
+        .eq("group_id", groupId);
       if (error) throw error;
       return data
         .filter((m) => m.profiles)
         .map((m) => ({
           userId: m.user_id,
-          role: m.role as Member['role'],
+          role: m.role as Member["role"],
           displayName: m.profiles!.display_name,
           publicId: m.profiles!.public_id,
           avatarUrl: m.profiles!.avatar_url,
         }))
-        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR'));
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
     },
   });
 }
 
-type PlayerInput = { name: string; pixKey?: string | null; profileId?: string | null };
+type PlayerInput = {
+  name: string;
+  pixKey?: string | null;
+  profileId?: string | null;
+};
 
 export function useAddPlayer(groupId: string) {
   return useMutation({
     mutationFn: async (input: PlayerInput) => {
       const { error } = await getSupabase()
-        .from('players')
+        .from("players")
         .insert({
           group_id: groupId,
           name: input.name.trim(),
@@ -96,35 +100,56 @@ export function useAddPlayer(groupId: string) {
           profile_id: input.profileId ?? null,
         });
       if (error) {
-        if (error.code === '23505') throw new Error('Essa conta já está ligada a outro nome da lista.');
-        throw new Error('Não foi possível adicionar o jogador.');
+        if (error.code === "23505")
+          throw new Error("Essa conta já está ligada a outro nome da lista.");
+        throw new Error("Não foi possível adicionar o jogador.");
       }
     },
     onSuccess: () => invalidatePlayers(groupId),
   });
 }
 
-type PlayerUpdate = { name?: string; pixKey?: string | null; profileId?: string | null; active?: boolean };
+type PlayerUpdate = {
+  name?: string;
+  pixKey?: string | null;
+  profileId?: string | null;
+  active?: boolean;
+};
 
 export function useUpdatePlayer(groupId: string) {
   return useMutation({
-    mutationFn: async ({ playerId, changes }: { playerId: string; changes: PlayerUpdate }) => {
-      const update: { name?: string; pix_key?: string | null; profile_id?: string | null; active?: boolean } = {};
+    mutationFn: async ({
+      playerId,
+      changes,
+    }: {
+      playerId: string;
+      changes: PlayerUpdate;
+    }) => {
+      const update: {
+        name?: string;
+        pix_key?: string | null;
+        profile_id?: string | null;
+        active?: boolean;
+      } = {};
       if (changes.name !== undefined) update.name = changes.name.trim();
-      if (changes.pixKey !== undefined) update.pix_key = changes.pixKey?.trim() || null;
-      if (changes.profileId !== undefined) update.profile_id = changes.profileId;
+      if (changes.pixKey !== undefined)
+        update.pix_key = changes.pixKey?.trim() || null;
+      if (changes.profileId !== undefined)
+        update.profile_id = changes.profileId;
       if (changes.active !== undefined) update.active = changes.active;
 
       const { data, error } = await getSupabase()
-        .from('players')
+        .from("players")
         .update(update)
-        .eq('id', playerId)
-        .select('id');
+        .eq("id", playerId)
+        .select("id");
       if (error) {
-        if (error.code === '23505') throw new Error('Essa conta já está ligada a outro nome da lista.');
-        throw new Error('Não foi possível salvar.');
+        if (error.code === "23505")
+          throw new Error("Essa conta já está ligada a outro nome da lista.");
+        throw new Error("Não foi possível salvar.");
       }
-      if (!data || data.length === 0) throw new Error('Só o admin do grupo pode editar a lista.');
+      if (!data || data.length === 0)
+        throw new Error("Só o admin do grupo pode editar a lista.");
     },
     onSuccess: () => invalidatePlayers(groupId),
   });
@@ -141,16 +166,21 @@ export function useRemovePlayer(groupId: string) {
   });
 }
 
-async function removePlayer(playerId: string): Promise<'deleted' | 'deactivated'> {
+async function removePlayer(
+  playerId: string,
+): Promise<"deleted" | "deactivated"> {
   const supabase = getSupabase();
-  const { error } = await supabase.from('players').delete().eq('id', playerId);
-  if (!error) return 'deleted';
-  if (error.code === '23503') {
-    const { error: updateError } = await supabase.from('players').update({ active: false }).eq('id', playerId);
-    if (updateError) throw new Error('Não foi possível remover o jogador.');
-    return 'deactivated';
+  const { error } = await supabase.from("players").delete().eq("id", playerId);
+  if (!error) return "deleted";
+  if (error.code === "23503") {
+    const { error: updateError } = await supabase
+      .from("players")
+      .update({ active: false })
+      .eq("id", playerId);
+    if (updateError) throw new Error("Não foi possível remover o jogador.");
+    return "deactivated";
   }
-  throw new Error('Não foi possível remover o jogador.');
+  throw new Error("Não foi possível remover o jogador.");
 }
 
 /**
@@ -161,13 +191,14 @@ export function useArchivePlayer(groupId: string) {
   return useMutation({
     mutationFn: async (playerId: string) => {
       const { data, error } = await getSupabase()
-        .from('players')
+        .from("players")
         .update({ archived_at: new Date().toISOString() })
-        .eq('id', playerId)
-        .eq('active', false)
-        .select('id');
-      if (error) throw new Error('Não foi possível remover.');
-      if (!data || data.length === 0) throw new Error('Só o admin do grupo pode remover.');
+        .eq("id", playerId)
+        .eq("active", false)
+        .select("id");
+      if (error) throw new Error("Não foi possível remover.");
+      if (!data || data.length === 0)
+        throw new Error("Só o admin do grupo pode remover.");
     },
     onSuccess: () => invalidatePlayers(groupId),
   });
@@ -180,10 +211,13 @@ export function useArchivePlayer(groupId: string) {
 export function useRestorePlayer(groupId: string) {
   return useMutation({
     mutationFn: async (playerId: string) => {
-      const { error } = await getSupabase().rpc('restore_player', { p_player_id: playerId });
+      const { error } = await getSupabase().rpc("restore_player", {
+        p_player_id: playerId,
+      });
       if (error) {
-        if (error.code === '42501') throw new Error('Só o admin do grupo pode fazer isso.');
-        throw new Error('Não foi possível voltar o jogador para a lista.');
+        if (error.code === "42501")
+          throw new Error("Só o admin do grupo pode fazer isso.");
+        throw new Error("Não foi possível voltar o jogador para a lista.");
       }
     },
     onSuccess: () => {
@@ -194,25 +228,51 @@ export function useRestorePlayer(groupId: string) {
 }
 
 /**
- * Tira a pessoa do grupo (só admin): ela perde o acesso ao grupo e aos jogos.
- * O nome dela sai da lista do mesmo jeito que em "Tirar da lista": quem já jogou fica inativo
- * e continua no histórico. O banco não deixa o grupo ficar sem admin.
+ * Tira a pessoa do grupo (só admin): ela perde o acesso ao grupo e aos jogos e não volta pelo convite.
+ * O nome dela vai para "Fora da lista" (nunca é apagado), para o admin poder trazer de volta com
+ * "Voltar para a lista". Quem ainda não tinha nome na lista ganha um, já fora da lista.
+ * O banco não deixa o grupo ficar sem admin.
  */
 export function useRemoveFromGroup(groupId: string) {
   return useMutation({
-    mutationFn: async ({ userId, playerId }: { userId: string; playerId?: string | null }) => {
-      const { data, error } = await getSupabase()
-        .from('group_members')
+    mutationFn: async (
+      input:
+        | { userId: string; playerId: string }
+        | { userId: string; displayName: string },
+    ) => {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("group_members")
         .delete()
-        .eq('group_id', groupId)
-        .eq('user_id', userId)
-        .select('user_id');
+        .eq("group_id", groupId)
+        .eq("user_id", input.userId)
+        .select("user_id");
       if (error) {
-        if (error.code === 'P0001') throw new Error('O grupo precisa ter pelo menos um admin.');
-        throw new Error('Não foi possível remover do grupo.');
+        if (error.code === "P0001")
+          throw new Error("O grupo precisa ter pelo menos um admin.");
+        throw new Error("Não foi possível remover do grupo.");
       }
-      if (!data || data.length === 0) throw new Error('Só o admin do grupo pode remover alguém.');
-      if (playerId) await removePlayer(playerId);
+      if (!data || data.length === 0)
+        throw new Error("Só o admin do grupo pode remover alguém.");
+
+      const { error: playerError } =
+        "playerId" in input
+          ? await supabase
+              .from("players")
+              .update({ active: false })
+              .eq("id", input.playerId)
+          : await supabase
+              .from("players")
+              .insert({
+                group_id: groupId,
+                name: input.displayName,
+                profile_id: input.userId,
+                active: false,
+              });
+      if (playerError)
+        throw new Error(
+          'Removido do grupo, mas o nome não foi para "Fora da lista".',
+        );
     },
     onSuccess: () => {
       invalidatePlayers(groupId);
@@ -222,11 +282,20 @@ export function useRemoveFromGroup(groupId: string) {
 }
 
 /** Acha uma conta pelo ID do jogador (MF-XXXXXX). */
-export async function findProfileByPublicId(publicId: string): Promise<FoundProfile | null> {
-  const { data, error } = await getSupabase().rpc('find_profile_by_public_id', { p_public_id: publicId });
-  if (error) throw new Error('Não foi possível buscar agora. Tente de novo.');
+export async function findProfileByPublicId(
+  publicId: string,
+): Promise<FoundProfile | null> {
+  const { data, error } = await getSupabase().rpc("find_profile_by_public_id", {
+    p_public_id: publicId,
+  });
+  if (error) throw new Error("Não foi possível buscar agora. Tente de novo.");
   const row = data?.[0];
   return row
-    ? { id: row.id, publicId: row.public_id, displayName: row.display_name, avatarUrl: row.avatar_url }
+    ? {
+        id: row.id,
+        publicId: row.public_id,
+        displayName: row.display_name,
+        avatarUrl: row.avatar_url,
+      }
     : null;
 }
