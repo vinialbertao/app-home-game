@@ -1,7 +1,7 @@
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Card, FormMessage, LoadingState, Screen } from '@/components';
+import { AppText, Button, Card, DeleteGameButton, FormMessage, LoadingState, Screen } from '@/components';
 import { paidIn } from '@/lib/cash';
 import { formatBRL } from '@/lib/money';
 import { toCashPlayers, useAddBuyin, useCashGame, useSetGameStatus, type CashGame, type GamePlayer } from '@/services/games';
@@ -87,7 +87,8 @@ function LiveTable({ game }: { game: CashGame }) {
 
       {!game.isHost ? (
         <AppText variant="caption" style={styles.center}>
-          Só o host lança buy-ins e rebuys. Esta tela atualiza sozinha.
+          Só o host lança buy-ins e rebuys. Esta tela atualiza sozinha. Quando o host encerrar a mesa, você
+          conta as suas fichas aqui no seu celular.
         </AppText>
       ) : null}
 
@@ -135,6 +136,7 @@ function LiveTable({ game }: { game: CashGame }) {
         </AppText>
       ) : null}
       <FormMessage message={addBuyin.error?.message ?? setStatus.error?.message} />
+      <DeleteGameButton game={game} />
     </Screen>
   );
 }

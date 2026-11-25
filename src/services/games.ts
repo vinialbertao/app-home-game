@@ -54,6 +54,8 @@ export type CashGame = {
   status: GameStatus;
   hostId: string | null;
   isHost: boolean;
+  /** a linha da mesa de quem está usando o app (null se ele não está jogando) */
+  myGamePlayerId: string | null;
   settings: CashSettings;
   startedAt: string | null;
   finishedAt: string | null;
@@ -153,6 +155,7 @@ async function fetchCashGame(gameId: string, userId: string): Promise<CashGame> 
     status: game.status as GameStatus,
     hostId: game.host_id,
     isHost: game.host_id === userId,
+    myGamePlayerId: gamePlayers.find((p) => p.profileId === userId)?.id ?? null,
     settings: (game.settings ?? {}) as CashSettings,
     startedAt: game.started_at,
     finishedAt: game.finished_at,
@@ -177,8 +180,8 @@ async function fetchCashGame(gameId: string, userId: string): Promise<CashGame> 
 }
 
 /**
- * Jogo de cash completo. Quem não é o host vê só leitura, atualizando a cada 5 segundos
- * (o "ao vivo" instantâneo entra na Fase 6).
+ * Jogo de cash completo. Atualiza sozinho: na contagem, todo mundo a cada 3 s (cada um conta as próprias
+ * fichas); fora dela, quem não é o host a cada 5 s. O "ao vivo" instantâneo entra na Fase 6.
  */
 export function useCashGame(gameId: string) {
   const userId = useUserId();
@@ -188,6 +191,7 @@ export function useCashGame(gameId: string) {
     refetchInterval: (query) => {
       const game = query.state.data;
       if (!game || game.status === 'cancelled') return false;
+      if (game.status === 'counting') return 3000;
       return game.isHost && game.status !== 'finished' ? false : 5000;
     },
   });
@@ -447,6 +451,23 @@ export function useMarkSettlement(groupId: string, gameId: string) {
       }
     },
     onSuccess: () => invalidateGame(gameId, groupId),
+  });
+}
+
+/** Exclui o jogo e tudo dele (host do jogo ou admin do grupo). A lista de jogadores do grupo não muda. */
+export function useDeleteGame(game: Pick<CashGame, 'id' | 'groupId'>) {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await getSupabase().from('games').delete().eq('id', game.id).select('id');
+      if (error || !data || data.length === 0) {
+        throw new Error('Não foi possível excluir. Só o host do jogo ou o admin do grupo pode excluir.');
+      }
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: queryKeys.game(game.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupGames(game.groupId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupSettlements(game.groupId) });
+    },
   });
 }
 

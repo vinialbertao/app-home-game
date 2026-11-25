@@ -84,7 +84,8 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Chave Pix do acerto: vale a do perfil de quem tem conta; a do jogador na lista é para quem não tem conta.
 - Pix: `src/lib/pix.ts` monta o "copia e cola" (BR Code do Banco Central, CRC16 testado com o exemplo do manual);
   o QR é desenhado com `react-native-qrcode-svg` (preto no branco: `colors.qrForeground/qrBackground`).
-- Celulares de quem não é host atualizam a cada 5 s (`refetchInterval`); o tempo real fica para a Fase 6.
+- Atualização sozinha (`refetchInterval`): na contagem, todos a cada 3 s; fora dela, quem não é host a cada 5 s.
+  O tempo real fica para a Fase 6.
 - Jogador que já jogou não é apagado: `useRemovePlayer` deixa inativo para não quebrar o histórico.
 
 ## Regras do banco (Supabase)
@@ -96,8 +97,10 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   acessa tabela nenhuma; o único acesso sem login é a função `get_panel(código)`.
 - Funções novas em `public` não têm permissão por padrão: dê `grant execute ... to authenticated` explicitamente.
 - Quem vê o quê: membro do grupo lê tudo do grupo; admin edita grupo, membros e lista de jogadores;
-  qualquer membro cria jogo e vira o host; só o host altera os dados do jogo (host ou admin alteram `games`);
-  no acerto, quem paga marca `paid_at` e quem recebe marca `received_at`.
+  qualquer membro cria jogo e vira o host; só o host altera os dados do jogo (host ou admin alteram e
+  excluem `games`); no acerto, quem paga marca `paid_at` e quem recebe marca `received_at`.
+- Exceção: na contagem do cash (`counting`), o jogador grava `chip_counts` e `game_players.counted_cents` da
+  própria linha (`private.is_my_game_player`); um trigger impede que ele mexa em outra coluna.
 - Fotos de perfil: bucket público `avatars`, cada pessoa só grava na pasta `avatars/<id da conta>/`.
 - Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
   `find_profile_by_public_id` (via `supabase.rpc`).
@@ -166,6 +169,11 @@ Decisões tomadas:
 - Cash: todos começam com o mesmo buy-in; o rebuy tem valor livre (vem com o buy-in inicial, editável).
   Torneio: rebuy = buy-in; o add-on é que tem valor próprio (25/11).
 - Contagem do cash: além da contagem por cor, a pessoa pode digitar direto o valor total que já calculou (25/11).
+- Contagem do cash: cada jogador com conta conta as próprias fichas no celular dele (só a dele, só com o jogo
+  em `counting`); o host conta por quem não tem o app, corrige qualquer um e é o único que fecha o acerto.
+  Rebuys continuam só com o host (25/11).
+- Excluir jogo (cash ou torneio), durante ou depois: host do jogo ou admin do grupo, com confirmação. Apaga tudo
+  do jogo; a lista de jogadores do grupo não muda (25/11).
 - Conferência do cash que não bate: o app não decide. O host reconta ou registra um ajuste com motivo e
   escolhe em qual jogador ele cai (`adjustments.game_player_id`) (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.

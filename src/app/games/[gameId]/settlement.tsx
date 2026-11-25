@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, Share, StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Card, FormMessage, LoadingState, Screen } from '@/components';
+import { AppText, Button, Card, DeleteGameButton, FormMessage, LoadingState, Screen } from '@/components';
 import { playerResults } from '@/lib/cash';
 import { buildSettlementSummary } from '@/lib/cashSummary';
 import { formatBRL } from '@/lib/money';
@@ -136,6 +136,7 @@ function SettlementView({ game }: { game: CashGame }) {
       </View>
 
       <FormMessage message={mark.error?.message ?? reopen.error?.message} />
+      <DeleteGameButton game={game} />
     </Screen>
   );
 }

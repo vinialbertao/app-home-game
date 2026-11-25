@@ -1,7 +1,7 @@
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Card, FormMessage, LoadingState, Screen } from '@/components';
+import { AppText, Button, Card, DeleteGameButton, FormMessage, LoadingState, Screen } from '@/components';
 import { playerResults, reconcile } from '@/lib/cash';
 import { formatBRL } from '@/lib/money';
 import { settle, SettlementError } from '@/lib/settlement';
@@ -74,6 +74,9 @@ function Counting({ game }: { game: CashGame }) {
   }
 
   const nameOf = (gamePlayerId: string) => game.players.find((p) => p.id === gamePlayerId)?.name ?? 'Jogador';
+  const me = game.players.find((p) => p.id === game.myGamePlayerId);
+  const openCount = (gamePlayerId: string) =>
+    router.push({ pathname: '/games/[gameId]/count/[gamePlayerId]', params: { gameId: game.id, gamePlayerId } });
 
   return (
     <Screen
@@ -92,6 +95,22 @@ function Counting({ game }: { game: CashGame }) {
       }
     >
       <Stack.Screen options={{ title: 'Contagem' }} />
+
+      {me && !game.isHost ? (
+        <Card>
+          <AppText variant="heading">{me.isCounted ? 'Suas fichas estão contadas' : 'Conte as suas fichas'}</AppText>
+          <AppText variant="caption">
+            {me.isCounted
+              ? 'Se errou, dá para corrigir até o host fechar o acerto.'
+              : 'Por cor ou digitando o valor total. O host vê na hora.'}
+          </AppText>
+          <Button
+            title={me.isCounted ? 'Corrigir minha contagem' : 'Contar minhas fichas'}
+            variant={me.isCounted ? 'secondary' : 'primary'}
+            onPress={() => openCount(me.id)}
+          />
+        </Card>
+      ) : null}
 
       <Card>
         <AppText variant="heading">Conferência</AppText>
@@ -145,15 +164,7 @@ function Counting({ game }: { game: CashGame }) {
           <Card
             key={player.id}
             accessibilityLabel={`Contar fichas de ${player.name}`}
-            onPress={
-              game.isHost
-                ? () =>
-                    router.push({
-                      pathname: '/games/[gameId]/count/[gamePlayerId]',
-                      params: { gameId: game.id, gamePlayerId: player.id },
-                    })
-                : undefined
-            }
+            onPress={game.isHost || player.id === game.myGamePlayerId ? () => openCount(player.id) : undefined}
           >
             <View style={styles.line}>
               <View style={styles.flex}>
@@ -169,7 +180,7 @@ function Counting({ game }: { game: CashGame }) {
                 </AppText>
               ) : (
                 <AppText variant="caption" style={styles.warning}>
-                  {game.isHost ? 'Contar ›' : 'Falta contar'}
+                  {game.isHost || player.id === game.myGamePlayerId ? 'Contar ›' : 'Falta contar'}
                 </AppText>
               )}
             </View>
@@ -204,6 +215,7 @@ function Counting({ game }: { game: CashGame }) {
       ) : null}
 
       <FormMessage message={saveSettlement.error?.message ?? setStatus.error?.message} />
+      <DeleteGameButton game={game} />
     </Screen>
   );
 }

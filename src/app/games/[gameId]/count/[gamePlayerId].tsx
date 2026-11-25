@@ -27,11 +27,17 @@ export default function CountPlayerScreen() {
       </Screen>
     );
   }
-  if (!game.data.isHost) {
+  const isMine = player.id === game.data.myGamePlayerId;
+  const canCount = game.data.isHost || (isMine && game.data.status === 'counting');
+  if (!canCount) {
     return (
       <Screen>
         <Stack.Screen options={{ title: player.name }} />
-        <AppText muted>Só o host conta as fichas.</AppText>
+        <AppText muted>
+          {isMine
+            ? 'Você conta as suas fichas quando o host encerrar a mesa.'
+            : 'Cada um conta as próprias fichas; o host conta por quem não tem o app.'}
+        </AppText>
       </Screen>
     );
   }
@@ -111,7 +117,9 @@ function CountForm({ game, player }: { game: CashGame; player: GamePlayer }) {
         </>
       }
     >
-      <Stack.Screen options={{ title: `Fichas de ${player.name}` }} />
+      <Stack.Screen
+        options={{ title: player.id === game.myGamePlayerId ? 'Minhas fichas' : `Fichas de ${player.name}` }}
+      />
 
       <SegmentedControl<Mode>
         accessibilityLabel="Como contar"
