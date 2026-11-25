@@ -124,6 +124,10 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 - [ ] Fase 7 — Testes e distribuição
 - [ ] Fase 8 — Torneio de teste com os amigos
 
-Decisões tomadas: conta da Apple Developer como pessoa física (24/11).
+Decisões tomadas:
+- Conta da Apple Developer como pessoa física (24/11).
+- Confirmação de e-mail do Supabase desligada na versão 1; religar antes de publicar nas lojas (25/11).
+- Convite para grupo por código colado no app até a Fase 6; depois vira link clicável (25/11).
+- "Esqueci a senha" fica para a Fase 7; até lá a senha é redefinida pelo painel do Supabase (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
