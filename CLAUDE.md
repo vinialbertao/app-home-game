@@ -36,13 +36,18 @@ src/app/            telas (Expo Router: cada arquivo é uma rota)
   groups/join.tsx   Entrar com código (modal; cola a mensagem do WhatsApp)
   groups/[groupId]/index.tsx       Tela do grupo (convite, jogadores, kit, novo jogo)
   groups/[groupId]/players/        Lista de jogadores, editar jogador, ligar conta a um nome
-  groups/[groupId]/kit.tsx         Kit de fichas (admin edita; sugestões de 300 e 500)
-  groups/[groupId]/cash.tsx        Cash game
+  groups/[groupId]/kit.tsx         Kit de fichas (?kind=cash|tournament; admin edita; sugestões de 300 e 500)
+  groups/[groupId]/cash.tsx        Novo cash: quem veio, buy-in, blinds
+  games/[gameId]/index.tsx         Mesa ao vivo do cash (redireciona para contagem/acerto conforme o status)
+  games/[gameId]/player/…          Jogador na mesa: rebuy de valor livre, desfazer, contar quem vai embora
+  games/[gameId]/add-player.tsx    Quem chegou depois
+  games/[gameId]/count/            Contagem por cor e conferência; adjust.tsx = ajuste do host
+  games/[gameId]/settlement.tsx    Acerto: resultado, Pix (pix/[settlementId] = QR), Paguei/Recebi, resumo
   groups/[groupId]/tournament.tsx  Torneio
   profile.tsx       Meus dados (foto, nome, ID, Pix, histórico)
 src/components/     componentes visuais reutilizáveis (importe de '@/components')
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
-src/services/       acesso ao Supabase: um arquivo por assunto (auth, profile, groups, players, kits), com hooks do TanStack Query
+src/services/       acesso ao Supabase: um arquivo por assunto (auth, profile, groups, players, kits, games), com hooks do TanStack Query
 src/theme/          cores, espaçamentos, raios e tipografia
 src/services/supabase.ts          cliente do Supabase (getSupabase) e teste de conexão
 src/services/session.tsx          SessionProvider/useSession/useUserId (login guardado no celular)
@@ -77,6 +82,9 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Formulário que edita dados do servidor: um componente filho que recebe os dados prontos e começa o
   `useState` com eles (não preencher em `useEffect`; o lint recusa).
 - Chave Pix do acerto: vale a do perfil de quem tem conta; a do jogador na lista é para quem não tem conta.
+- Pix: `src/lib/pix.ts` monta o "copia e cola" (BR Code do Banco Central, CRC16 testado com o exemplo do manual);
+  o QR é desenhado com `react-native-qrcode-svg` (preto no branco: `colors.qrForeground/qrBackground`).
+- Celulares de quem não é host atualizam a cada 5 s (`refetchInterval`); o tempo real fica para a Fase 6.
 - Jogador que já jogou não é apagado: `useRemovePlayer` deixa inativo para não quebrar o histórico.
 
 ## Regras do banco (Supabase)
@@ -96,8 +104,13 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - `profiles`: selecione colunas explícitas, nunca `select('*')`. A data de nascimento é privada (sem permissão
   de leitura) e só o dono lê, por `my_birth_date()`. O cadastro envia `display_name` e `birth_date` em
   `options.data` do `signUp`; o banco recusa menor de 18.
-- Kit de fichas guarda o **valor de face** (25, 100, 500...), sem unidade. No torneio é ponto; no cash a
-  conversão para reais vem do buy-in de cada jogo (calculada em `src/lib`, sem arredondar no meio).
+- Kit de fichas: `chip_kits.kind` = `cash` (valor de cada cor em centavos) ou `tournament` (valor em pontos).
+  O grupo tem `default_cash_kit_id` e `default_tournament_kit_id` (um trigger confere o tipo).
+- Acerto do cash: sempre por `save_cash_settlement(game_id, transfers)`, que confere no banco, centavo por
+  centavo, fichas contadas + ajustes − buy-ins, salva as transferências e encerra o jogo. Não dá para refazer
+  depois que alguém marcou pagamento.
+- Jogador contado = tem linhas em `chip_counts` (a contagem grava todas as cores, inclusive as zeradas).
+- Status do cash: `live` (mesa) → `counting` (contagem/conferência) → `finished` (acerto salvo).
 - Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
 
 ## Segredos
@@ -133,7 +146,7 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 - [x] Fase 1 — Esqueleto do app: projeto, pastas, telas navegáveis (tela inicial com perfil + grupos), tema e componentes; testada no iPhone em 24/11
 - [x] Fase 2 — Banco de dados: 17 tabelas, RLS testado (36 verificações), cliente no app; "Conectado ao servidor" conferido no iPhone em 24/11
 - [x] Fase 3 — Login, grupos, convite por código, jogadores (ligar conta), kit e Meus dados com foto; testada no iPhone com duas contas em 25/11
-- [ ] Fase 4 — Cash game
+- [ ] Fase 4 — Cash game: código pronto (config, mesa, contagem, conferência, acerto com Pix); falta o teste no iPhone
 - [ ] Fase 5 — Torneio com várias mesas
 - [ ] Fase 6 — Painel por link (TV e celulares)
 - [ ] Fase 7 — Testes e distribuição
