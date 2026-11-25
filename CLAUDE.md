@@ -109,8 +109,6 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   convite (`join_group` recusa com "Removido do grupo"); quem saiu sozinho volta pelo convite, com o nome
   reativado (trigger `group_members_track_removal`). Remover do grupo nunca apaga o nome: ele vai para
   "Fora da lista" (quem não tinha nome ganha um, já inativo), para o admin poder trazer de volta.
-- "Remover de vez" = `players.archived_at` (só nome inativo): some de todas as listas (`usePlayers` filtra), mas
-  o nome continua no histórico dos jogos. Removido do grupo e removido de vez não volta mais (nem pelo convite).
 - Fotos de perfil: bucket público `avatars`, cada pessoa só grava na pasta `avatars/<id da conta>/`.
 - Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
   `find_profile_by_public_id` (via `supabase.rpc`).
@@ -193,7 +191,8 @@ Decisões tomadas:
   em que ela já jogou continuam no histórico. Não dá para remover a si mesmo por essa tela (25/11).
 - "Voltar para a lista": nome sem conta volta normal; nome com conta que o admin tinha tirado do grupo volta
   ao grupo com a conta, como antes. Quem nunca aceitou o convite ou saiu sozinho continua precisando do convite (25/11).
-- Quem está "Fora da lista" pode ser removido de vez pelo admin: some das listas, mas continua no histórico (25/11).
+- Não existe "remover de vez": quem está "Fora da lista" fica lá, no histórico do grupo, até o admin voltar com
+  ele para a lista (25/11).
 - Quem o admin tirou do grupo não volta pelo convite que já tem: só o admin traz de volta, por "Voltar para a
   lista". Quem saiu do grupo sozinho pode voltar pelo convite (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.

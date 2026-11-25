@@ -1,25 +1,14 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import {
-  AppText,
-  Avatar,
-  Card,
-  EmptyState,
-  FormMessage,
-  LoadingState,
-  Screen,
-} from "@/components";
-import { useMembers, usePlayers, useUpdatePlayer } from "@/services/players";
-import { spacing } from "@/theme";
+import { AppText, Avatar, Card, EmptyState, FormMessage, LoadingState, Screen } from '@/components';
+import { useMembers, usePlayers, useUpdatePlayer } from '@/services/players';
+import { spacing } from '@/theme';
 
 /** Ligar quem entrou pelo convite a um nome que já está na lista (só admin). */
 export default function LinkMemberScreen() {
-  const { groupId, userId } = useLocalSearchParams<{
-    groupId: string;
-    userId: string;
-  }>();
+  const { groupId, userId } = useLocalSearchParams<{ groupId: string; userId: string }>();
   const players = usePlayers(groupId);
   const members = useMembers(groupId);
   const updatePlayer = useUpdatePlayer(groupId);
@@ -29,10 +18,7 @@ export default function LinkMemberScreen() {
   if (!member || !players.data) {
     return (
       <Screen>
-        <LoadingState
-          error={members.error ?? players.error}
-          onRetry={() => members.refetch()}
-        />
+        <LoadingState error={members.error ?? players.error} onRetry={() => members.refetch()} />
       </Screen>
     );
   }
@@ -50,11 +36,7 @@ export default function LinkMemberScreen() {
   return (
     <Screen>
       <View style={styles.row}>
-        <Avatar
-          name={member.displayName}
-          photoUrl={member.avatarUrl}
-          size={48}
-        />
+        <Avatar name={member.displayName} photoUrl={member.avatarUrl} size={48} />
         <View style={styles.flex}>
           <AppText variant="heading">{member.displayName}</AppText>
           <AppText variant="caption">ID {member.publicId}</AppText>
@@ -69,11 +51,7 @@ export default function LinkMemberScreen() {
         />
       ) : (
         unlinked.map((player) => (
-          <Card
-            key={player.id}
-            accessibilityLabel={`Ligar a ${player.name}`}
-            onPress={() => link(player.id)}
-          >
+          <Card key={player.id} accessibilityLabel={`Ligar a ${player.name}`} onPress={() => link(player.id)}>
             <View style={styles.row}>
               <Avatar name={player.name} size={40} />
               <AppText variant="label" style={styles.flex}>
@@ -90,6 +68,6 @@ export default function LinkMemberScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: 2 },
 });
