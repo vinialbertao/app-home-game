@@ -27,18 +27,26 @@ sem combinar antes: isso exige development build (EAS) e muda o fluxo de teste.
 
 ```
 src/app/            telas (Expo Router: cada arquivo é uma rota)
-  index.tsx         redireciona (hoje sempre para /login)
-  login.tsx         Login / cadastro
+  _layout.tsx       sessão + rotas protegidas (Stack.Protected): sem login só abre login/signup
+  index.tsx         redireciona: logado → /groups, sem login → /login
+  login.tsx         Entrar (e-mail e senha)
+  signup.tsx        Criar conta (nome, nascimento 18+, e-mail, senha)
   groups/index.tsx  Tela inicial: perfil (foto, nome, ID, botão "Meus dados") + Meus grupos
-  groups/[groupId]/index.tsx       Tela do grupo
+  groups/new.tsx    Criar grupo (modal)
+  groups/join.tsx   Entrar com código (modal; cola a mensagem do WhatsApp)
+  groups/[groupId]/index.tsx       Tela do grupo (convite, jogadores, kit, novo jogo)
+  groups/[groupId]/players/        Lista de jogadores, editar jogador, ligar conta a um nome
+  groups/[groupId]/kit.tsx         Kit de fichas (admin edita; sugestões de 300 e 500)
   groups/[groupId]/cash.tsx        Cash game
   groups/[groupId]/tournament.tsx  Torneio
   profile.tsx       Meus dados (foto, nome, ID, Pix, histórico)
 src/components/     componentes visuais reutilizáveis (importe de '@/components')
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
-src/services/       acesso ao Supabase e a outros serviços externos (sampleData.ts: dados de mentira até a Fase 3)
+src/services/       acesso ao Supabase: um arquivo por assunto (auth, profile, groups, players, kits), com hooks do TanStack Query
 src/theme/          cores, espaçamentos, raios e tipografia
 src/services/supabase.ts          cliente do Supabase (getSupabase) e teste de conexão
+src/services/session.tsx          SessionProvider/useSession/useUserId (login guardado no celular)
+src/services/queryClient.ts       cache do TanStack Query e as chaves (queryKeys)
 src/services/database.types.ts    tipos gerados do banco (não editar à mão)
 supabase/migrations/              todas as mudanças do banco, em ordem (ver supabase/README.md)
 supabase/tests/rls_test.sql       teste das regras de segurança (resultado certo: TESTES_OK)
@@ -64,6 +72,12 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   (`profiles.public_id`, formato `MF-` + 6 caracteres sem 0/O/1/I, ex.: `MF-7K4Q2X`). Aparece na tela
   inicial e em Meus dados, e serve para o admin achar e vincular a pessoa na lista do grupo. Nunca é o `uuid` interno.
 - Timer do torneio é baseado no horário de início do nível salvo no Supabase (nunca um contador local).
+- Dados do servidor nas telas: sempre por hooks de `src/services` (TanStack Query). Depois de gravar, invalide
+  as chaves de `queryKeys`. Erros chegam às telas já em português (`throw new Error('…')`).
+- Formulário que edita dados do servidor: um componente filho que recebe os dados prontos e começa o
+  `useState` com eles (não preencher em `useEffect`; o lint recusa).
+- Chave Pix do acerto: vale a do perfil de quem tem conta; a do jogador na lista é para quem não tem conta.
+- Jogador que já jogou não é apagado: `useRemovePlayer` deixa inativo para não quebrar o histórico.
 
 ## Regras do banco (Supabase)
 
@@ -76,6 +90,7 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Quem vê o quê: membro do grupo lê tudo do grupo; admin edita grupo, membros e lista de jogadores;
   qualquer membro cria jogo e vira o host; só o host altera os dados do jogo (host ou admin alteram `games`);
   no acerto, quem paga marca `paid_at` e quem recebe marca `received_at`.
+- Fotos de perfil: bucket público `avatars`, cada pessoa só grava na pasta `avatars/<id da conta>/`.
 - Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
   `find_profile_by_public_id` (via `supabase.rpc`).
 - `profiles`: selecione colunas explícitas, nunca `select('*')`. A data de nascimento é privada (sem permissão
@@ -117,7 +132,7 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 - [x] Fase 0 — Preparação
 - [x] Fase 1 — Esqueleto do app: projeto, pastas, telas navegáveis (tela inicial com perfil + grupos), tema e componentes; testada no iPhone em 24/11
 - [x] Fase 2 — Banco de dados: 17 tabelas, RLS testado (36 verificações), cliente no app; "Conectado ao servidor" conferido no iPhone em 24/11
-- [ ] Fase 3 — Login, grupos, jogadores e kit
+- [ ] Fase 3 — Login, grupos, jogadores e kit: código pronto (3a–3e); falta o teste de dois celulares no iPhone
 - [ ] Fase 4 — Cash game
 - [ ] Fase 5 — Torneio com várias mesas
 - [ ] Fase 6 — Painel por link (TV e celulares)
