@@ -142,7 +142,8 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 Decisões tomadas:
 - Conta da Apple Developer como pessoa física (24/11).
 - Confirmação de e-mail do Supabase desligada na versão 1; religar antes de publicar nas lojas (25/11).
-  No painel (Authentication → Sign In / Providers → Email): "Enable Email provider" LIGADO e só "Confirm email" desligado.
+  No painel: Authentication → Sign In / Providers. Em "User Signups", "Confirm email" DESLIGADO;
+  no painel "Email" da lista de provedores, "Enable email provider" LIGADO (desligar ele bloqueia o cadastro).
 - Convite para grupo por código colado no app até a Fase 6; depois vira link clicável (25/11).
 - "Esqueci a senha" fica para a Fase 7; até lá a senha é redefinida pelo painel do Supabase (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
