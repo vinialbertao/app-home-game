@@ -1,9 +1,9 @@
 import { Redirect } from 'expo-router';
 
-/**
- * Porta de entrada. Na Fase 3 decide entre Login e Meus grupos conforme a sessão do Supabase;
- * por enquanto sempre manda para o Login.
- */
+import { useSession } from '@/services/session';
+
+/** Porta de entrada: logado vai para a tela inicial; sem login vai para o Login. */
 export default function Index() {
-  return <Redirect href="/login" />;
+  const { session } = useSession();
+  return <Redirect href={session ? '/groups' : '/login'} />;
 }

@@ -2,20 +2,39 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Screen, ServerStatusBadge, TextField } from '@/components';
+import { AppText, Button, FormMessage, Screen, ServerStatusBadge, TextField } from '@/components';
+import { isValidEmail } from '@/lib/authForm';
+import { signIn } from '@/services/auth';
 import { colors, spacing } from '@/theme';
 
-/** Login / cadastro. Fase 3: e-mail e senha pelo Supabase Auth; Apple e Google depois do TestFlight. */
+/** Entrar com e-mail e senha. Ao entrar, as rotas protegidas levam sozinhas para a tela inicial. */
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignIn() {
+    if (!isValidEmail(email)) return setError('Digite um e-mail válido.');
+    if (!password) return setError('Digite a senha.');
+    setError(null);
+    setLoading(true);
+    const result = await signIn(email, password);
+    setLoading(false);
+    if (!result.ok) setError(result.error);
+  }
 
   return (
     <Screen
       footer={
         <>
-          <Button title="Entrar" onPress={() => router.replace('/groups')} />
-          <Button title="Criar conta" variant="ghost" onPress={() => router.replace('/groups')} />
+          <Button title="Entrar" onPress={handleSignIn} loading={loading} />
+          <Button
+            title="Criar conta"
+            variant="ghost"
+            disabled={loading}
+            onPress={() => router.push('/signup')}
+          />
           <ServerStatusBadge />
         </>
       }
@@ -35,18 +54,22 @@ export default function LoginScreen() {
         placeholder="voce@email.com"
         autoCapitalize="none"
         autoComplete="email"
+        autoCorrect={false}
         keyboardType="email-address"
         textContentType="emailAddress"
+        returnKeyType="next"
       />
       <TextField
         label="Senha"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        autoComplete="password"
+        autoComplete="current-password"
         textContentType="password"
-        hint="Por enquanto os botões só navegam: o login de verdade chega na Fase 3."
+        returnKeyType="go"
+        onSubmitEditing={handleSignIn}
       />
+      <FormMessage message={error} />
     </Screen>
   );
 }
