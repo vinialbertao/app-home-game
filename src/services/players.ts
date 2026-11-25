@@ -153,6 +153,26 @@ async function removePlayer(playerId: string): Promise<'deleted' | 'deactivated'
 }
 
 /**
+ * Volta um nome para a lista (só admin). Se o admin tinha tirado essa conta do grupo,
+ * ela volta a ser membro, como antes (o banco confere: quem nunca aceitou o convite não entra).
+ */
+export function useRestorePlayer(groupId: string) {
+  return useMutation({
+    mutationFn: async (playerId: string) => {
+      const { error } = await getSupabase().rpc('restore_player', { p_player_id: playerId });
+      if (error) {
+        if (error.code === '42501') throw new Error('Só o admin do grupo pode fazer isso.');
+        throw new Error('Não foi possível voltar o jogador para a lista.');
+      }
+    },
+    onSuccess: () => {
+      invalidatePlayers(groupId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.members(groupId) });
+    },
+  });
+}
+
+/**
  * Tira a pessoa do grupo (só admin): ela perde o acesso ao grupo e aos jogos.
  * O nome dela sai da lista do mesmo jeito que em "Tirar da lista": quem já jogou fica inativo
  * e continua no histórico. O banco não deixa o grupo ficar sem admin.

@@ -13,6 +13,7 @@ import {
   usePlayers,
   useRemoveFromGroup,
   useRemovePlayer,
+  useRestorePlayer,
   useUpdatePlayer,
   type FoundProfile,
   type Player,
@@ -40,6 +41,7 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
   const updatePlayer = useUpdatePlayer(groupId);
   const removePlayer = useRemovePlayer(groupId);
   const removeFromGroup = useRemoveFromGroup(groupId);
+  const restorePlayer = useRestorePlayer(groupId);
   const myId = useUserId();
   const [name, setName] = useState(current.name);
   const [pixKey, setPixKey] = useState(current.pixKey ?? '');
@@ -250,7 +252,13 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
         <Button
           title="Voltar para a lista"
           variant="secondary"
-          onPress={() => updatePlayer.mutate({ playerId: current.id, changes: { active: true } })}
+          loading={restorePlayer.isPending}
+          onPress={() =>
+            restorePlayer.mutate(current.id, {
+              onSuccess: () => router.back(),
+              onError: (e) => setMessage({ text: e.message, tone: 'error' }),
+            })
+          }
         />
       )}
     </Screen>

@@ -813,6 +813,7 @@ export type Database = {
       get_panel: { Args: { p_code: string }; Returns: Json }
       join_group: { Args: { p_invite_code: string }; Returns: string }
       my_birth_date: { Args: never; Returns: string }
+      restore_player: { Args: { p_player_id: string }; Returns: undefined }
       save_cash_settlement: {
         Args: { p_game_id: string; p_transfers: Json }
         Returns: undefined

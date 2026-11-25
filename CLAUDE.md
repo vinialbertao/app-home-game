@@ -103,7 +103,9 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   própria linha (`private.is_my_game_player`); um trigger impede que ele mexa em outra coluna.
 - Remover do grupo: o admin apaga a linha de `group_members` (a própria pessoa também pode sair); o trigger
   `group_members_keep_admin` impede o grupo de ficar sem admin. O nome na lista sai como em "Tirar da lista"
-  (quem já jogou fica inativo e continua no histórico).
+  (quem já jogou fica inativo e continua no histórico). Quem o admin tirou fica anotado em
+  `private.group_removed_members`; "Voltar para a lista" é a função `restore_player`, que reativa o nome e,
+  se a conta está nessa anotação, devolve a pessoa ao grupo como membro.
 - Fotos de perfil: bucket público `avatars`, cada pessoa só grava na pasta `avatars/<id da conta>/`.
 - Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
   `find_profile_by_public_id` (via `supabase.rpc`).
@@ -184,5 +186,7 @@ Decisões tomadas:
   convite (25/11).
 - Remover jogador do grupo (admin, com confirmação): a pessoa perde o acesso ao grupo e aos jogos, mas os jogos
   em que ela já jogou continuam no histórico. Não dá para remover a si mesmo por essa tela (25/11).
+- "Voltar para a lista": nome sem conta volta normal; nome com conta que o admin tinha tirado do grupo volta
+  ao grupo com a conta, como antes. Quem nunca aceitou o convite ou saiu sozinho continua precisando do convite (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
