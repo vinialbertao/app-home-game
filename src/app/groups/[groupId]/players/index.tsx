@@ -1,11 +1,19 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { AppText, Avatar, Button, Card, EmptyState, FormMessage, LoadingState, Screen, TextField } from '@/components';
 import { isOutsideGroup } from '@/lib/playerId';
 import { useGroup } from '@/services/groups';
-import { useAddPlayer, useMembers, usePlayers, type Member, type Player } from '@/services/players';
+import {
+  useAddPlayer,
+  useMembers,
+  usePlayers,
+  useRemoveFromGroup,
+  type Member,
+  type Player,
+} from '@/services/players';
+import { useUserId } from '@/services/session';
 import { colors, spacing } from '@/theme';
 
 /** Lista de jogadores: todos veem; o admin adiciona, edita e liga as contas aos nomes. */
@@ -15,6 +23,8 @@ export default function PlayersScreen() {
   const players = usePlayers(groupId);
   const members = useMembers(groupId);
   const addPlayer = useAddPlayer(groupId);
+  const removeFromGroup = useRemoveFromGroup(groupId);
+  const myId = useUserId();
   const [newName, setNewName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +62,17 @@ export default function PlayersScreen() {
     );
   }
 
+  function confirmRemoveMember(member: Member) {
+    Alert.alert('Remover do grupo?', `${member.displayName} sai do grupo e perde o acesso aos jogos.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => removeFromGroup.mutate({ userId: member.userId }, { onError: (e) => setError(e.message) }),
+      },
+    ]);
+  }
+
   return (
     <Screen>
       {isAdmin && pending.length > 0 ? (
@@ -85,6 +106,9 @@ export default function PlayersScreen() {
                   })
                 }
               />
+              {member.userId !== myId ? (
+                <Button title="Remover do grupo" variant="danger" onPress={() => confirmRemoveMember(member)} />
+              ) : null}
             </Card>
           ))}
         </View>

@@ -135,18 +135,48 @@ export function useUpdatePlayer(groupId: string) {
  */
 export function useRemovePlayer(groupId: string) {
   return useMutation({
-    mutationFn: async (playerId: string): Promise<'deleted' | 'deactivated'> => {
-      const supabase = getSupabase();
-      const { error } = await supabase.from('players').delete().eq('id', playerId);
-      if (!error) return 'deleted';
-      if (error.code === '23503') {
-        const { error: updateError } = await supabase.from('players').update({ active: false }).eq('id', playerId);
-        if (updateError) throw new Error('Não foi possível remover o jogador.');
-        return 'deactivated';
-      }
-      throw new Error('Não foi possível remover o jogador.');
-    },
+    mutationFn: removePlayer,
     onSuccess: () => invalidatePlayers(groupId),
+  });
+}
+
+async function removePlayer(playerId: string): Promise<'deleted' | 'deactivated'> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('players').delete().eq('id', playerId);
+  if (!error) return 'deleted';
+  if (error.code === '23503') {
+    const { error: updateError } = await supabase.from('players').update({ active: false }).eq('id', playerId);
+    if (updateError) throw new Error('Não foi possível remover o jogador.');
+    return 'deactivated';
+  }
+  throw new Error('Não foi possível remover o jogador.');
+}
+
+/**
+ * Tira a pessoa do grupo (só admin): ela perde o acesso ao grupo e aos jogos.
+ * O nome dela sai da lista do mesmo jeito que em "Tirar da lista": quem já jogou fica inativo
+ * e continua no histórico. O banco não deixa o grupo ficar sem admin.
+ */
+export function useRemoveFromGroup(groupId: string) {
+  return useMutation({
+    mutationFn: async ({ userId, playerId }: { userId: string; playerId?: string | null }) => {
+      const { data, error } = await getSupabase()
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .select('user_id');
+      if (error) {
+        if (error.code === 'P0001') throw new Error('O grupo precisa ter pelo menos um admin.');
+        throw new Error('Não foi possível remover do grupo.');
+      }
+      if (!data || data.length === 0) throw new Error('Só o admin do grupo pode remover alguém.');
+      if (playerId) await removePlayer(playerId);
+    },
+    onSuccess: () => {
+      invalidatePlayers(groupId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.members(groupId) });
+    },
   });
 }
 

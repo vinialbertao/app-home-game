@@ -6,10 +6,12 @@ import { AppText, Avatar, Button, Card, FormMessage, LoadingState, Screen, TextF
 import { buildInviteMessage } from '@/lib/invite';
 import { isOutsideGroup, normalizePlayerId } from '@/lib/playerId';
 import { useGroup } from '@/services/groups';
+import { useUserId } from '@/services/session';
 import {
   findProfileByPublicId,
   useMembers,
   usePlayers,
+  useRemoveFromGroup,
   useRemovePlayer,
   useUpdatePlayer,
   type FoundProfile,
@@ -37,6 +39,8 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
   const members = useMembers(groupId);
   const updatePlayer = useUpdatePlayer(groupId);
   const removePlayer = useRemovePlayer(groupId);
+  const removeFromGroup = useRemoveFromGroup(groupId);
+  const myId = useUserId();
   const [name, setName] = useState(current.name);
   const [pixKey, setPixKey] = useState(current.pixKey ?? '');
   const [searchId, setSearchId] = useState('');
@@ -46,6 +50,8 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
 
   const memberIds = members.data?.map((m) => m.userId) ?? [];
   const outsideGroup = members.data !== undefined && isOutsideGroup(current.profileId, memberIds);
+  const member = members.data?.find((m) => m.userId === current.profileId);
+  const canRemoveFromGroup = member !== undefined && member.userId !== myId;
 
   async function shareInvite() {
     if (!group.data) return;
@@ -133,6 +139,29 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
     ]);
   }
 
+  function confirmRemoveFromGroup() {
+    if (!member) return;
+    Alert.alert(
+      'Remover do grupo?',
+      `${member.displayName} sai do grupo e perde o acesso aos jogos. Os jogos que já jogou continuam no histórico.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () =>
+            removeFromGroup.mutate(
+              { userId: member.userId, playerId: current.id },
+              {
+                onSuccess: () => router.back(),
+                onError: (e) => setMessage({ text: e.message, tone: 'error' }),
+              },
+            ),
+        },
+      ],
+    );
+  }
+
   return (
     <Screen>
       <Stack.Screen options={{ title: current.name }} />
@@ -208,7 +237,14 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
 
       <FormMessage message={message?.text} tone={message?.tone} />
 
-      {current.active ? (
+      {canRemoveFromGroup ? (
+        <Button
+          title="Remover do grupo"
+          variant="danger"
+          onPress={confirmRemoveFromGroup}
+          loading={removeFromGroup.isPending}
+        />
+      ) : current.active ? (
         <Button title="Tirar da lista" variant="danger" onPress={confirmRemove} loading={removePlayer.isPending} />
       ) : (
         <Button

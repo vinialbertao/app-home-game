@@ -101,6 +101,9 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   excluem `games`); no acerto, quem paga marca `paid_at` e quem recebe marca `received_at`.
 - Exceção: na contagem do cash (`counting`), o jogador grava `chip_counts` e `game_players.counted_cents` da
   própria linha (`private.is_my_game_player`); um trigger impede que ele mexa em outra coluna.
+- Remover do grupo: o admin apaga a linha de `group_members` (a própria pessoa também pode sair); o trigger
+  `group_members_keep_admin` impede o grupo de ficar sem admin. O nome na lista sai como em "Tirar da lista"
+  (quem já jogou fica inativo e continua no histórico).
 - Fotos de perfil: bucket público `avatars`, cada pessoa só grava na pasta `avatars/<id da conta>/`.
 - Criar grupo, entrar por convite e achar alguém pelo ID: funções `create_group`, `join_group`,
   `find_profile_by_public_id` (via `supabase.rpc`).
@@ -179,5 +182,7 @@ Decisões tomadas:
 - Ligar um ID a um nome da lista não coloca a pessoa no grupo: ela só entra aceitando o convite. Se a conta
   ligada ainda não é membro, o app avisa (na hora, na tela do jogador e na lista) e o admin decide se envia o
   convite (25/11).
+- Remover jogador do grupo (admin, com confirmação): a pessoa perde o acesso ao grupo e aos jogos, mas os jogos
+  em que ela já jogou continuam no histórico. Não dá para remover a si mesmo por essa tela (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
