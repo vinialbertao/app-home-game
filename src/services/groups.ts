@@ -20,7 +20,8 @@ export type GroupDetails = {
   id: string;
   name: string;
   inviteCode: string;
-  defaultKitId: string | null;
+  cashKitId: string | null;
+  tournamentKitId: string | null;
   role: GroupRole;
 };
 
@@ -65,7 +66,7 @@ export function useGroup(groupId: string) {
     queryFn: async (): Promise<GroupDetails> => {
       const { data, error } = await getSupabase()
         .from('groups')
-        .select('id, name, invite_code, default_kit_id, group_members!inner(role, user_id)')
+        .select('id, name, invite_code, default_cash_kit_id, default_tournament_kit_id, group_members!inner(role, user_id)')
         .eq('id', groupId)
         .eq('group_members.user_id', userId)
         .single();
@@ -74,7 +75,8 @@ export function useGroup(groupId: string) {
         id: data.id,
         name: data.name,
         inviteCode: data.invite_code,
-        defaultKitId: data.default_kit_id,
+        cashKitId: data.default_cash_kit_id,
+        tournamentKitId: data.default_tournament_kit_id,
         role: (data.group_members[0]?.role ?? 'member') as GroupRole,
       };
     },

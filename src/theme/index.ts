@@ -24,6 +24,10 @@ export const colors = {
   danger: '#E5534B',
   warning: '#E8A13A',
   success: '#3FBF7F',
+
+  /** QR code precisa de preto no branco para os apps de banco lerem */
+  qrBackground: '#FFFFFF',
+  qrForeground: '#000000',
 } as const;
 
 export const spacing = {

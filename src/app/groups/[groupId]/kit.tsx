@@ -1,75 +1,87 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText, Button, Card, EmptyState, FormMessage, LoadingState, Screen } from '@/components';
 import {
   formatChipValue,
+  formatKitValue,
   KIT_PRESETS,
+  kitValueToInput,
   totalChips,
   totalValue,
   validateKitRows,
   type Denomination,
+  type KitKind,
   type KitRowInput,
 } from '@/lib/kit';
+import { formatBRL } from '@/lib/money';
 import { useGroup } from '@/services/groups';
 import { useGroupKit, useSaveGroupKit, type GroupKit } from '@/services/kits';
 import { colors, minTouchSize, radius, spacing, typography } from '@/theme';
 
-function toRows(denominations: Denomination[]): KitRowInput[] {
-  return denominations.map((d) => ({ color: d.color, value: String(d.value), quantity: String(d.quantity) }));
+function toRows(denominations: Denomination[], kind: KitKind): KitRowInput[] {
+  return denominations.map((d) => ({
+    color: d.color,
+    value: kitValueToInput(d.value, kind),
+    quantity: String(d.quantity),
+  }));
 }
 
-/** Kit de fichas do grupo. O admin edita; os outros só veem. */
+const TITLES: Record<KitKind, string> = { cash: 'Kit do cash', tournament: 'Kit do torneio' };
+
+/** Kit de fichas do grupo (?kind=cash ou tournament). O admin edita; os outros só veem. */
 export default function KitScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { groupId, kind: kindParam } = useLocalSearchParams<{ groupId: string; kind?: string }>();
+  const kind: KitKind = kindParam === 'cash' ? 'cash' : 'tournament';
   const group = useGroup(groupId);
-  const kit = useGroupKit(groupId, group.data?.defaultKitId);
+  const kitId = group.data ? (kind === 'cash' ? group.data.cashKitId : group.data.tournamentKitId) : undefined;
+  const kit = useGroupKit(groupId, kind, kitId);
 
   if (!group.data || kit.data === undefined) {
     return (
       <Screen>
+        <Stack.Screen options={{ title: TITLES[kind] }} />
         <LoadingState error={group.error ?? kit.error} onRetry={() => kit.refetch()} />
       </Screen>
     );
   }
 
-  const isAdmin = group.data.role === 'admin';
-
-  if (!isAdmin) {
+  if (group.data.role !== 'admin') {
     return (
       <Screen>
+        <Stack.Screen options={{ title: TITLES[kind] }} />
         {kit.data ? (
           <>
-            <KitSummary denominations={kit.data.denominations} />
+            <KitSummary denominations={kit.data.denominations} kind={kind} />
             {kit.data.denominations.map((d) => (
               <Card key={d.id}>
                 <View style={styles.viewRow}>
                   <AppText variant="label" style={styles.flex}>
                     {d.color}
                   </AppText>
-                  <AppText variant="number">{formatChipValue(d.value)}</AppText>
+                  <AppText variant="number">{formatKitValue(d.value, kind)}</AppText>
                   <AppText variant="caption">× {d.quantity}</AppText>
                 </View>
               </Card>
             ))}
           </>
         ) : (
-          <EmptyState title="Sem kit ainda" message="O admin do grupo ainda não cadastrou o kit de fichas." />
+          <EmptyState title="Sem kit ainda" message="O admin do grupo ainda não cadastrou este kit." />
         )}
       </Screen>
     );
   }
 
-  return <KitEditor key={groupId} groupId={groupId} kit={kit.data} />;
+  return <KitEditor key={`${groupId}-${kind}`} groupId={groupId} kind={kind} kit={kit.data} />;
 }
 
-function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) {
-  const saveKit = useSaveGroupKit(groupId);
-  const [rows, setRows] = useState<KitRowInput[]>(() => (kit ? toRows(kit.denominations) : []));
-  const [message, setMessage] = useState<{ text: string; tone: 'error' | 'success' } | null>(null);
+function KitEditor({ groupId, kind, kit }: { groupId: string; kind: KitKind; kit: GroupKit | null }) {
+  const saveKit = useSaveGroupKit(groupId, kind);
+  const [rows, setRows] = useState<KitRowInput[]>(() => (kit ? toRows(kit.denominations, kind) : []));
+  const [message, setMessage] = useState<string | null>(null);
 
-  const validation = validateKitRows(rows);
+  const validation = validateKitRows(rows, kind);
   const preview = validation.ok ? validation.denominations : null;
 
   function updateRow(index: number, field: keyof KitRowInput, value: string) {
@@ -78,34 +90,33 @@ function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) 
   }
 
   function save() {
-    const result = validateKitRows(rows);
-    if (!result.ok) return setMessage({ text: result.errors.join('\n'), tone: 'error' });
+    const result = validateKitRows(rows, kind);
+    if (!result.ok) return setMessage(result.errors.join('\n'));
     saveKit.mutate(
       { current: kit, denominations: result.denominations },
-      {
-        // Volta para a tela do grupo, que já mostra o resumo do kit atualizado
-        onSuccess: () => router.back(),
-        onError: (e) => setMessage({ text: e.message, tone: 'error' }),
-      },
+      // Volta para a tela do grupo, que já mostra o resumo do kit atualizado
+      { onSuccess: () => router.back(), onError: (e) => setMessage(e.message) },
     );
   }
 
   return (
     <Screen footer={<Button title="Salvar kit" onPress={save} loading={saveKit.isPending} />}>
+      <Stack.Screen options={{ title: TITLES[kind] }} />
       <AppText muted>
-        Cada cor tem um valor de face (25, 100, 500…) e a quantidade de fichas da maleta. No torneio o valor é em
-        pontos; no cash, o app converte para reais pelo buy-in de cada jogo.
+        {kind === 'cash'
+          ? 'No cash a ficha é dinheiro: cadastre quanto vale cada cor em reais (ex.: 0,50 · 1 · 5 · 10).'
+          : 'No torneio a ficha vale pontos (25, 100, 500…). Os blinds e o stack inicial usam esses valores.'}
       </AppText>
 
       {rows.length === 0 ? (
         <View style={styles.presets}>
           <AppText variant="heading">Começar por uma sugestão</AppText>
-          {KIT_PRESETS.map((preset) => (
+          {KIT_PRESETS[kind].map((preset) => (
             <Button
               key={preset.id}
               title={preset.label}
               variant="secondary"
-              onPress={() => setRows(toRows(preset.denominations))}
+              onPress={() => setRows(toRows(preset.denominations, kind))}
             />
           ))}
           <Button
@@ -121,7 +132,7 @@ function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) 
               Cor
             </AppText>
             <AppText variant="caption" style={styles.numberCol}>
-              Valor
+              {kind === 'cash' ? 'Valor (R$)' : 'Valor'}
             </AppText>
             <AppText variant="caption" style={styles.numberCol}>
               Qtd.
@@ -144,9 +155,9 @@ function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) 
                 style={[styles.input, styles.numberCol]}
                 value={row.value}
                 onChangeText={(text) => updateRow(index, 'value', text)}
-                placeholder="25"
+                placeholder={kind === 'cash' ? '0,50' : '25'}
                 placeholderTextColor={colors.textFaint}
-                keyboardType="number-pad"
+                keyboardType={kind === 'cash' ? 'decimal-pad' : 'number-pad'}
                 accessibilityLabel={`Valor da linha ${index + 1}`}
                 keyboardAppearance="dark"
               />
@@ -176,16 +187,17 @@ function KitEditor({ groupId, kit }: { groupId: string; kit: GroupKit | null }) 
             variant="secondary"
             onPress={() => setRows((current) => [...current, { color: '', value: '', quantity: '' }])}
           />
-          {preview ? <KitSummary denominations={preview} /> : null}
+          {preview ? <KitSummary denominations={preview} kind={kind} /> : null}
         </>
       )}
 
-      <FormMessage message={message?.text} tone={message?.tone} />
+      <FormMessage message={message} />
     </Screen>
   );
 }
 
-function KitSummary({ denominations }: { denominations: Denomination[] }) {
+function KitSummary({ denominations, kind }: { denominations: Denomination[]; kind: KitKind }) {
+  const value = totalValue(denominations);
   return (
     <Card>
       <View style={styles.viewRow}>
@@ -196,10 +208,10 @@ function KitSummary({ denominations }: { denominations: Denomination[] }) {
       </View>
       <View style={styles.viewRow}>
         <AppText variant="caption" style={styles.flex}>
-          Valor total do kit
+          {kind === 'cash' ? 'Dinheiro que o kit cobre' : 'Valor total do kit'}
         </AppText>
         <AppText variant="number" style={styles.gold}>
-          {formatChipValue(totalValue(denominations))}
+          {kind === 'cash' ? formatBRL(value) : formatChipValue(value)}
         </AppText>
       </View>
     </Card>

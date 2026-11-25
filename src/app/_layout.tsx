@@ -76,8 +76,16 @@ function RootNavigator() {
         <Stack.Screen name="groups/[groupId]/players/[playerId]" options={{ title: 'Jogador' }} />
         <Stack.Screen name="groups/[groupId]/players/link" options={{ title: 'Ligar conta' }} />
         <Stack.Screen name="groups/[groupId]/kit" options={{ title: 'Kit de fichas' }} />
-        <Stack.Screen name="groups/[groupId]/cash" options={{ title: 'Cash game' }} />
+        <Stack.Screen name="groups/[groupId]/cash" options={{ title: 'Novo cash' }} />
         <Stack.Screen name="groups/[groupId]/tournament" options={{ title: 'Torneio' }} />
+        <Stack.Screen name="games/[gameId]/index" options={{ title: 'Cash' }} />
+        <Stack.Screen name="games/[gameId]/player/[gamePlayerId]" options={{ title: 'Jogador' }} />
+        <Stack.Screen name="games/[gameId]/add-player" options={{ title: 'Adicionar jogador', presentation: 'modal' }} />
+        <Stack.Screen name="games/[gameId]/count/index" options={{ title: 'Contagem' }} />
+        <Stack.Screen name="games/[gameId]/count/[gamePlayerId]" options={{ title: 'Fichas' }} />
+        <Stack.Screen name="games/[gameId]/adjust" options={{ title: 'Ajuste', presentation: 'modal' }} />
+        <Stack.Screen name="games/[gameId]/settlement" options={{ title: 'Acerto' }} />
+        <Stack.Screen name="games/[gameId]/pix/[settlementId]" options={{ title: 'Pix', presentation: 'modal' }} />
         <Stack.Screen name="profile" options={{ title: 'Meus dados' }} />
       </Stack.Protected>
     </Stack>
