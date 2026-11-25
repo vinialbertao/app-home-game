@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           game_id: string
+          game_player_id: string
           id: string
           reason: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           game_id: string
+          game_player_id: string
           id?: string
           reason: string
         }
@@ -38,10 +40,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           game_id?: string
+          game_player_id?: string
           id?: string
           reason?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "adjustments_game_player_fk"
+            columns: ["game_player_id", "game_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id", "game_id"]
+          },
           {
             foreignKeyName: "adjustments_created_by_fkey"
             columns: ["created_by"]
@@ -186,6 +196,7 @@ export type Database = {
           created_by: string | null
           group_id: string
           id: string
+          kind: string
           name: string
           updated_at: string
         }
@@ -194,6 +205,7 @@ export type Database = {
           created_by?: string | null
           group_id: string
           id?: string
+          kind?: string
           name: string
           updated_at?: string
         }
@@ -202,6 +214,7 @@ export type Database = {
           created_by?: string | null
           group_id?: string
           id?: string
+          kind?: string
           name?: string
           updated_at?: string
         }
@@ -429,7 +442,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          default_kit_id: string | null
+          default_cash_kit_id: string | null
+          default_tournament_kit_id: string | null
           id: string
           invite_code: string
           name: string
@@ -438,7 +452,8 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          default_kit_id?: string | null
+          default_cash_kit_id?: string | null
+          default_tournament_kit_id?: string | null
           id?: string
           invite_code?: string
           name: string
@@ -447,7 +462,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          default_kit_id?: string | null
+          default_cash_kit_id?: string | null
+          default_tournament_kit_id?: string | null
           id?: string
           invite_code?: string
           name?: string
@@ -462,8 +478,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "groups_default_kit_fk"
-            columns: ["default_kit_id", "id"]
+            foreignKeyName: "groups_default_cash_kit_fk"
+            columns: ["default_cash_kit_id", "id"]
+            isOneToOne: false
+            referencedRelation: "chip_kits"
+            referencedColumns: ["id", "group_id"]
+          },
+          {
+            foreignKeyName: "groups_default_tournament_kit_fk"
+            columns: ["default_tournament_kit_id", "id"]
             isOneToOne: false
             referencedRelation: "chip_kits"
             referencedColumns: ["id", "group_id"]
@@ -787,6 +810,10 @@ export type Database = {
       get_panel: { Args: { p_code: string }; Returns: Json }
       join_group: { Args: { p_invite_code: string }; Returns: string }
       my_birth_date: { Args: never; Returns: string }
+      save_cash_settlement: {
+        Args: { p_game_id: string; p_transfers: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -75,7 +75,7 @@ begin
 
   insert into public.chip_kits (group_id, name) values (g, 'Maleta 500') returning id into kit;
   insert into public.chip_denominations (kit_id, color, value, quantity) values (kit, 'Branca', 25, 100) returning id into denom;
-  update public.groups set default_kit_id = kit where id = g;
+  update public.groups set default_tournament_kit_id = kit where id = g;
   insert into public.players (group_id, name) values (g, 'Pedro') returning id into p_pedro;
 
   insert into public.games (group_id, type, kit_id, host_id) values (g, 'cash', kit, a)
@@ -246,6 +246,71 @@ begin
     if sqlerrm like 'FALHA%' then raise; end if;
   end;
   checks := checks + 1;
+
+  -- ---------- cash: kit certo e acerto conferido no banco ----------
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+
+  begin
+    update public.groups set default_cash_kit_id = kit where id = g; -- kit é de torneio
+    raise exception 'FALHA: aceitou kit de torneio como kit do cash';
+  exception when others then
+    if sqlerrm like 'FALHA%' then raise; end if;
+  end;
+  checks := checks + 1;
+
+  declare
+    cash_kit uuid;
+    d5 uuid;
+    cash_game uuid;
+    cgp_a uuid; cgp_pedro uuid;
+  begin
+    insert into public.chip_kits (group_id, name, kind) values (g, 'Cash', 'cash') returning id into cash_kit;
+    insert into public.chip_denominations (kit_id, color, value, quantity) values (cash_kit, 'Vermelha', 500, 100) returning id into d5;
+    update public.groups set default_cash_kit_id = cash_kit where id = g;
+
+    -- A e Pedro colocam R$ 50 cada; no fim A tem R$ 70 e Pedro R$ 30 => Pedro paga R$ 20 para A
+    insert into public.games (group_id, type, kit_id, host_id, status) values (g, 'cash', cash_kit, a, 'counting') returning id into cash_game;
+    insert into public.game_players (game_id, player_id) values (cash_game, p_a) returning id into cgp_a;
+    insert into public.game_players (game_id, player_id) values (cash_game, p_pedro) returning id into cgp_pedro;
+    insert into public.buyins (game_id, game_player_id, kind, amount_cents) values
+      (cash_game, cgp_a, 'buyin', 5000), (cash_game, cgp_pedro, 'buyin', 5000);
+    insert into public.chip_counts (game_id, game_player_id, denomination_id, quantity) values
+      (cash_game, cgp_a, d5, 14), (cash_game, cgp_pedro, d5, 6);
+
+    -- B (não é host) não fecha o acerto
+    perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+    begin
+      perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
+      raise exception 'FALHA: quem não é host fechou o acerto';
+    exception when others then
+      if sqlerrm like 'FALHA%' then raise; end if;
+    end;
+    checks := checks + 1;
+
+    -- Host com valor errado: recusado
+    perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+    begin
+      perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 1999)));
+      raise exception 'FALHA: aceitou acerto que não bate por 1 centavo';
+    exception when others then
+      if sqlerrm like 'FALHA%' then raise; end if;
+    end;
+    checks := checks + 1;
+
+    -- Host com valor certo: aceito e o jogo termina
+    perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
+    if (select status from public.games where id = cash_game) <> 'finished'
+       or (select count(*) from public.settlements where game_id = cash_game) <> 1 then
+      raise exception 'FALHA: acerto certo não foi salvo';
+    end if;
+    checks := checks + 1;
+
+    -- Ajuste: R$ 5 a mais contados de A; o ajuste de -R$ 5 em A faz o acerto bater de novo
+    update public.chip_counts set quantity = 15 where game_player_id = cgp_a;
+    insert into public.adjustments (game_id, game_player_id, amount_cents, reason) values (cash_game, cgp_a, -500, 'Ficha a mais');
+    perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
+    checks := checks + 1;
+  end;
 
   -- ---------- painel: abre pelo código, sem Pix e sem ids ----------
   if public.get_panel(lower(panel)) ->> 'group_name' <> 'Poker de quinta' then
