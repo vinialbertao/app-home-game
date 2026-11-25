@@ -10,9 +10,11 @@ type Props = Omit<PressableProps, 'children' | 'style'> & {
   title: string;
   variant?: Variant;
   loading?: boolean;
+  /** Menos espaço nas laterais (botões pequenos, como o ✕ de uma linha). */
+  compact?: boolean;
 };
 
-export function Button({ title, variant = 'primary', loading, disabled, ...rest }: Props) {
+export function Button({ title, variant = 'primary', loading, compact, disabled, ...rest }: Props) {
   const isDisabled = disabled || loading;
   const textColor = variant === 'primary' ? colors.onPrimary : variant === 'danger' ? colors.danger : colors.text;
 
@@ -24,6 +26,7 @@ export function Button({ title, variant = 'primary', loading, disabled, ...rest 
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        compact && styles.compact,
         pressed && (variant === 'primary' ? styles.primaryPressed : styles.pressed),
         isDisabled && styles.disabled,
       ]}
@@ -51,6 +54,7 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
   ghost: { backgroundColor: 'transparent' },
   danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.danger },
+  compact: { paddingHorizontal: spacing.sm },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.45 },
   title: { fontSize: 16 },
