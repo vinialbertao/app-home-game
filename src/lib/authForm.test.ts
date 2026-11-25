@@ -33,12 +33,14 @@ describe('authErrorMessage', () => {
   it('traduz pelo código', () => {
     expect(authErrorMessage({ code: 'invalid_credentials' })).toBe('E-mail ou senha incorretos.');
     expect(authErrorMessage({ code: 'user_already_exists' })).toContain('Já existe');
+    expect(authErrorMessage({ code: 'email_provider_disabled' })).toContain('desligado no servidor');
   });
 
   it('traduz pela mensagem quando não há código', () => {
     expect(authErrorMessage({ message: 'Invalid login credentials' })).toBe('E-mail ou senha incorretos.');
     expect(authErrorMessage({ message: 'Database error saving new user' })).toContain('18+');
     expect(authErrorMessage({ message: 'Network request failed' })).toContain('conexão');
+    expect(authErrorMessage({ message: 'Email signups are disabled' })).toContain('desligado no servidor');
   });
 
   it('tem mensagem padrão', () => {

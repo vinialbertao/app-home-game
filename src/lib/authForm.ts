@@ -47,11 +47,15 @@ export function authErrorMessage(error: AuthErrorLike | null | undefined): strin
     case 'over_email_send_rate_limit':
       return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.';
     case 'signup_disabled':
-      return 'O cadastro está desligado no momento.';
+    case 'email_provider_disabled':
+      return 'O cadastro por e-mail está desligado no servidor (Supabase → Authentication → Email).';
     case 'unexpected_failure':
       return 'Não foi possível criar a conta. Confira a data de nascimento (18+).';
   }
 
+  if (message.includes('signups are disabled') || message.includes('signups not allowed')) {
+    return 'O cadastro por e-mail está desligado no servidor (Supabase → Authentication → Email).';
+  }
   if (message.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (message.includes('already registered')) return 'Já existe uma conta com esse e-mail. Use "Entrar".';
   if (message.includes('database error saving new user')) {
