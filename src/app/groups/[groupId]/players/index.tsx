@@ -146,7 +146,10 @@ export default function PlayersScreen() {
       {inactive.length > 0 ? (
         <View style={styles.section}>
           <AppText variant="heading">Fora da lista ({inactive.length})</AppText>
-          <AppText variant="caption">Saíram, mas continuam no histórico dos jogos.</AppText>
+          <AppText variant="caption">
+            Saíram, mas continuam no histórico dos jogos.
+            {isAdmin ? ' Toque no nome para voltar à lista ou remover de vez.' : ''}
+          </AppText>
           {inactive.map((player) => (
             <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} outside={false} />
           ))}

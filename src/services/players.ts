@@ -42,6 +42,7 @@ export function usePlayers(groupId: string) {
         .from('players')
         .select('id, name, pix_key, active, profile_id, profiles(public_id)')
         .eq('group_id', groupId)
+        .is('archived_at', null)
         .order('active', { ascending: false })
         .order('name');
       if (error) throw error;
@@ -150,6 +151,26 @@ async function removePlayer(playerId: string): Promise<'deleted' | 'deactivated'
     return 'deactivated';
   }
   throw new Error('Não foi possível remover o jogador.');
+}
+
+/**
+ * Remove de vez um nome que já está fora da lista (só admin): some de todas as listas do grupo,
+ * mas continua no histórico dos jogos. Volta sozinho se a pessoa entrar de novo pelo convite.
+ */
+export function useArchivePlayer(groupId: string) {
+  return useMutation({
+    mutationFn: async (playerId: string) => {
+      const { data, error } = await getSupabase()
+        .from('players')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', playerId)
+        .eq('active', false)
+        .select('id');
+      if (error) throw new Error('Não foi possível remover.');
+      if (!data || data.length === 0) throw new Error('Só o admin do grupo pode remover.');
+    },
+    onSuccess: () => invalidatePlayers(groupId),
+  });
 }
 
 /**
