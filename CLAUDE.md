@@ -176,5 +176,8 @@ Decisões tomadas:
   do jogo; a lista de jogadores do grupo não muda (25/11).
 - Conferência do cash que não bate: o app não decide. O host reconta ou registra um ajuste com motivo e
   escolhe em qual jogador ele cai (`adjustments.game_player_id`) (25/11).
+- Ligar um ID a um nome da lista não coloca a pessoa no grupo: ela só entra aceitando o convite. Se a conta
+  ligada ainda não é membro, o app avisa (na hora, na tela do jogador e na lista) e o admin decide se envia o
+  convite (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Avatar, Button, Card, EmptyState, FormMessage, LoadingState, Screen, TextField } from '@/components';
+import { isOutsideGroup } from '@/lib/playerId';
 import { useGroup } from '@/services/groups';
 import { useAddPlayer, useMembers, usePlayers, type Member, type Player } from '@/services/players';
 import { colors, spacing } from '@/theme';
@@ -28,6 +29,8 @@ export default function PlayersScreen() {
   const isAdmin = group.data.role === 'admin';
   const linkedIds = new Set(players.data.map((p) => p.profileId).filter(Boolean));
   const pending = members.data?.filter((m) => !linkedIds.has(m.userId)) ?? [];
+  const memberIds = members.data?.map((m) => m.userId);
+  const outside = (player: Player) => memberIds !== undefined && isOutsideGroup(player.profileId, memberIds);
   const active = players.data.filter((p) => p.active);
   const inactive = players.data.filter((p) => !p.active);
 
@@ -94,7 +97,7 @@ export default function PlayersScreen() {
         {active.length === 0 ? (
           <EmptyState title="Lista vazia" message={isAdmin ? 'Adicione os nomes de quem joga.' : undefined} />
         ) : (
-          active.map((player) => <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} />)
+          active.map((player) => <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} outside={outside(player)} />)
         )}
       </View>
 
@@ -121,7 +124,7 @@ export default function PlayersScreen() {
           <AppText variant="heading">Fora da lista ({inactive.length})</AppText>
           <AppText variant="caption">Saíram, mas continuam no histórico dos jogos.</AppText>
           {inactive.map((player) => (
-            <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} />
+            <PlayerRow key={player.id} groupId={groupId} player={player} isAdmin={isAdmin} outside={false} />
           ))}
         </View>
       ) : null}
@@ -129,7 +132,9 @@ export default function PlayersScreen() {
   );
 }
 
-function PlayerRow({ groupId, player, isAdmin }: { groupId: string; player: Player; isAdmin: boolean }) {
+type RowProps = { groupId: string; player: Player; isAdmin: boolean; outside: boolean };
+
+function PlayerRow({ groupId, player, isAdmin, outside }: RowProps) {
   const details = [
     player.publicId ? `Conta ${player.publicId}` : 'Sem conta no app',
     player.pixKey ? 'Pix cadastrado' : null,
@@ -145,6 +150,11 @@ function PlayerRow({ groupId, player, isAdmin }: { groupId: string; player: Play
           {player.name}
         </AppText>
         <AppText variant="caption">{details}</AppText>
+        {outside ? (
+          <AppText variant="caption" style={styles.warning}>
+            Ainda não entrou no grupo
+          </AppText>
+        ) : null}
       </View>
       {isAdmin ? <AppText variant="caption">Editar ›</AppText> : null}
     </View>
@@ -168,4 +178,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: 2 },
   inactive: { color: colors.textMuted },
+  warning: { color: colors.warning },
 });

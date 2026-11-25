@@ -1,9 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Avatar, Button, Card, FormMessage, LoadingState, Screen, TextField } from '@/components';
-import { normalizePlayerId } from '@/lib/playerId';
+import { buildInviteMessage } from '@/lib/invite';
+import { isOutsideGroup, normalizePlayerId } from '@/lib/playerId';
+import { useGroup } from '@/services/groups';
 import {
   findProfileByPublicId,
   useMembers,
@@ -13,7 +15,7 @@ import {
   type FoundProfile,
   type Player,
 } from '@/services/players';
-import { spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 /** Editar jogador (só admin): nome, chave Pix, conta ligada, tirar da lista. */
 export default function EditPlayerScreen() {
@@ -31,6 +33,7 @@ export default function EditPlayerScreen() {
 }
 
 function EditPlayerForm({ groupId, current }: { groupId: string; current: Player }) {
+  const group = useGroup(groupId);
   const members = useMembers(groupId);
   const updatePlayer = useUpdatePlayer(groupId);
   const removePlayer = useRemovePlayer(groupId);
@@ -40,6 +43,14 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
   const [found, setFound] = useState<FoundProfile | null>(null);
   const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone: 'error' | 'success' } | null>(null);
+
+  const memberIds = members.data?.map((m) => m.userId) ?? [];
+  const outsideGroup = members.data !== undefined && isOutsideGroup(current.profileId, memberIds);
+
+  async function shareInvite() {
+    if (!group.data) return;
+    await Share.share({ message: buildInviteMessage(group.data.name, group.data.inviteCode) });
+  }
 
   function save() {
     if (!name.trim()) return setMessage({ text: 'O nome não pode ficar vazio.', tone: 'error' });
@@ -78,13 +89,19 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
         onSuccess: () => {
           setFound(null);
           setSearchId('');
-          const isMember = members.data?.some((m) => m.userId === profile.id);
-          setMessage({
-            text: isMember
-              ? `${current.name} agora está ligado à conta de ${profile.displayName}.`
-              : `Ligado. ${profile.displayName} ainda não entrou no grupo: mande o código de convite.`,
-            tone: 'success',
-          });
+          if (!isOutsideGroup(profile.id, memberIds)) {
+            setMessage({ text: `${current.name} agora está ligado à conta de ${profile.displayName}.`, tone: 'success' });
+            return;
+          }
+          setMessage(null);
+          Alert.alert(
+            'Ainda não está no grupo',
+            `${profile.displayName} foi ligado a ${current.name}, mas ainda não entrou no grupo. Até entrar pelo convite, não vê os jogos nem conta as próprias fichas. Quer enviar o convite?`,
+            [
+              { text: 'Agora não', style: 'cancel' },
+              { text: 'Enviar convite', onPress: shareInvite },
+            ],
+          );
         },
         onError: (e) => setMessage({ text: e.message, tone: 'error' }),
       },
@@ -142,6 +159,18 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
         {current.profileId ? (
           <>
             <AppText variant="caption">Ligado à conta {current.publicId ?? ''}.</AppText>
+            {outsideGroup ? (
+              <View style={styles.notice}>
+                <AppText variant="label" style={styles.warning}>
+                  Ainda não entrou no grupo
+                </AppText>
+                <AppText variant="caption">
+                  Joga normalmente pela sua mesa, mas só vê os jogos e conta as próprias fichas depois de
+                  entrar pelo convite.
+                </AppText>
+                <Button title="Enviar convite" variant="secondary" onPress={shareInvite} />
+              </View>
+            ) : null}
             <Button title="Desligar conta" variant="ghost" onPress={unlink} />
           </>
         ) : (
@@ -194,6 +223,8 @@ function EditPlayerForm({ groupId, current }: { groupId: string; current: Player
 
 const styles = StyleSheet.create({
   found: { gap: spacing.sm, marginTop: spacing.sm },
+  notice: { gap: spacing.xs, marginTop: spacing.sm },
+  warning: { color: colors.warning },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: 2 },
 });

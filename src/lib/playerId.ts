@@ -8,3 +8,11 @@ export function normalizePlayerId(input: string): string | null {
   const id = `MF-${body}`;
   return PLAYER_ID.test(id) ? id : null;
 }
+
+/**
+ * Nome da lista ligado a uma conta que ainda não entrou no grupo pelo convite.
+ * A pessoa joga pela mesa do host, mas só vê o grupo (e conta as próprias fichas) depois de entrar.
+ */
+export function isOutsideGroup(profileId: string | null, memberIds: readonly string[]): boolean {
+  return profileId !== null && !memberIds.includes(profileId);
+}
