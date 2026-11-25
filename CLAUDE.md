@@ -151,7 +151,7 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 - [x] Fase 1 — Esqueleto do app: projeto, pastas, telas navegáveis (tela inicial com perfil + grupos), tema e componentes; testada no iPhone em 24/11
 - [x] Fase 2 — Banco de dados: 17 tabelas, RLS testado (36 verificações), cliente no app; "Conectado ao servidor" conferido no iPhone em 24/11
 - [x] Fase 3 — Login, grupos, convite por código, jogadores (ligar conta), kit e Meus dados com foto; testada no iPhone com duas contas em 25/11
-- [ ] Fase 4 — Cash game: código pronto (config, mesa, contagem, conferência, acerto com Pix); falta o teste no iPhone
+- [x] Fase 4 — Cash game: config, mesa, contagem (cada um no seu celular), conferência, acerto com Pix, excluir jogo; testada com dois celulares em 25/11
 - [ ] Fase 5 — Torneio com várias mesas
 - [ ] Fase 6 — Painel por link (TV e celulares)
 - [ ] Fase 7 — Testes e distribuição
