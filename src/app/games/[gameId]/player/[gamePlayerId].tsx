@@ -115,7 +115,7 @@ export default function GamePlayerScreen() {
 
       {isHost && game.data.status === 'live' ? (
         <Button
-          title={player.counts ? 'Ver contagem das fichas' : 'Vai embora? Contar as fichas dele agora'}
+          title={player.isCounted ? 'Ver contagem das fichas' : 'Vai embora? Contar as fichas dele agora'}
           variant="ghost"
           onPress={() =>
             router.push({

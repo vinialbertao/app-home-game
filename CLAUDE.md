@@ -109,7 +109,9 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Acerto do cash: sempre por `save_cash_settlement(game_id, transfers)`, que confere no banco, centavo por
   centavo, fichas contadas + ajustes − buy-ins, salva as transferências e encerra o jogo. Não dá para refazer
   depois que alguém marcou pagamento.
-- Jogador contado = tem linhas em `chip_counts` (a contagem grava todas as cores, inclusive as zeradas).
+- Contagem do cash, de um dos dois jeitos: por cor (linhas em `chip_counts`, todas as cores, inclusive as
+  zeradas) ou pelo valor total digitado (`game_players.counted_cents`). Quando o total existe, ele vale no lugar
+  das fichas (no app e no `save_cash_settlement`); salvar um jeito apaga o outro.
 - Status do cash: `live` (mesa) → `counting` (contagem/conferência) → `finished` (acerto salvo).
 - Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
 
@@ -163,6 +165,7 @@ Decisões tomadas:
   (valor em pontos). No cash não há conversão: valor contado = soma de quantidade × valor (25/11).
 - Cash: todos começam com o mesmo buy-in; o rebuy tem valor livre (vem com o buy-in inicial, editável).
   Torneio: rebuy = buy-in; o add-on é que tem valor próprio (25/11).
+- Contagem do cash: além da contagem por cor, a pessoa pode digitar direto o valor total que já calculou (25/11).
 - Conferência do cash que não bate: o app não decide. O host reconta ou registra um ajuste com motivo e
   escolhe em qual jogador ele cai (`adjustments.game_player_id`) (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.

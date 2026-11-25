@@ -14,6 +14,8 @@ export type CashPlayer = {
   buyins: Cents[];
   /** quantidade de fichas de cada cor na contagem final (denominationId → quantidade) */
   counts: Record<string, number>;
+  /** valor total digitado direto (a pessoa já fez a conta); quando existe, vale no lugar das fichas */
+  countedCents?: Cents | null;
   /** ajustes da conferência que caem neste jogador (positivo: ele recebe mais) */
   adjustments: Cents[];
 };
@@ -41,7 +43,7 @@ export type PlayerResult = {
 
 export function playerResults(players: CashPlayer[], denominations: CashDenomination[]): PlayerResult[] {
   return players.map((p) => {
-    const counted = countedValue(p.counts, denominations);
+    const counted = p.countedCents ?? countedValue(p.counts, denominations);
     const adjustment = sum(p.adjustments);
     const paid = paidIn(p);
     return { playerId: p.playerId, name: p.name, paidIn: paid, counted, adjustment, net: counted + adjustment - paid };

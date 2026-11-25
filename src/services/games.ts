@@ -28,8 +28,12 @@ export type GamePlayer = {
   /** chave Pix que vale no acerto: a do perfil de quem tem conta, senão a da lista */
   pixKey: string | null;
   buyins: BuyinEntry[];
-  /** denominationId → quantidade; null = ainda não foi contado */
+  /** denominationId → quantidade; null = não foi contado por cor */
   counts: Record<string, number> | null;
+  /** valor total digitado direto; null = não foi digitado */
+  countedCents: Cents | null;
+  /** já foi contado de algum jeito (por cor ou pelo total) */
+  isCounted: boolean;
   adjustments: Cents[];
 };
 
@@ -66,6 +70,7 @@ export function toCashPlayers(game: CashGame): CashPlayer[] {
     name: p.name,
     buyins: p.buyins.map((b) => b.amountCents),
     counts: p.counts ?? {},
+    countedCents: p.countedCents,
     adjustments: p.adjustments,
   }));
 }
@@ -94,7 +99,7 @@ async function fetchCashGame(gameId: string, userId: string): Promise<CashGame> 
   const [players, buyins, counts, adjustments, settlements, kit] = await Promise.all([
     supabase
       .from('game_players')
-      .select('id, player_id, players(name, profile_id, pix_key, profiles(pix_key))')
+      .select('id, player_id, counted_cents, players(name, profile_id, pix_key, profiles(pix_key))')
       .eq('game_id', gameId)
       .order('created_at'),
     supabase
@@ -136,6 +141,8 @@ async function fetchCashGame(gameId: string, userId: string): Promise<CashGame> 
           createdAt: b.created_at,
         })),
       counts: counted.length > 0 ? Object.fromEntries(counted.map((c) => [c.denomination_id, c.quantity])) : null,
+      countedCents: gp.counted_cents,
+      isCounted: counted.length > 0 || gp.counted_cents !== null,
       adjustments: adjustments.data!.filter((a) => a.game_player_id === gp.id).map((a) => a.amount_cents),
     };
   });
@@ -313,20 +320,47 @@ export function useSetGameStatus(game: Pick<CashGame, 'id' | 'groupId'>) {
   });
 }
 
-/** Grava a contagem de um jogador (todas as cores, inclusive as zeradas: assim fica marcado como contado). */
+/**
+ * Grava a contagem de um jogador, de um dos dois jeitos:
+ * - por cor: todas as cores, inclusive as zeradas (assim fica marcado como contado), e apaga o total digitado;
+ * - pelo total digitado: guarda o valor e apaga a contagem por cor.
+ */
 export function useSaveCount(game: Pick<CashGame, 'id' | 'groupId'>) {
   return useMutation({
-    mutationFn: async (input: { gamePlayerId: string; counts: Record<string, number> }) => {
-      const rows = Object.entries(input.counts).map(([denominationId, quantity]) => ({
-        game_id: game.id,
-        game_player_id: input.gamePlayerId,
-        denomination_id: denominationId,
-        quantity,
-      }));
-      const { error } = await getSupabase()
-        .from('chip_counts')
-        .upsert(rows, { onConflict: 'game_player_id,denomination_id' });
-      if (error) throw new Error('Não foi possível salvar a contagem.');
+    mutationFn: async (
+      input:
+        | { gamePlayerId: string; mode: 'chips'; counts: Record<string, number> }
+        | { gamePlayerId: string; mode: 'total'; totalCents: Cents },
+    ) => {
+      const supabase = getSupabase();
+      if (input.mode === 'chips') {
+        const rows = Object.entries(input.counts).map(([denominationId, quantity]) => ({
+          game_id: game.id,
+          game_player_id: input.gamePlayerId,
+          denomination_id: denominationId,
+          quantity,
+        }));
+        const { error } = await supabase
+          .from('chip_counts')
+          .upsert(rows, { onConflict: 'game_player_id,denomination_id' });
+        if (error) throw new Error('Não foi possível salvar a contagem.');
+        const { error: clearError } = await supabase
+          .from('game_players')
+          .update({ counted_cents: null })
+          .eq('id', input.gamePlayerId);
+        if (clearError) throw new Error('Não foi possível salvar a contagem.');
+      } else {
+        const { error } = await supabase
+          .from('game_players')
+          .update({ counted_cents: input.totalCents })
+          .eq('id', input.gamePlayerId);
+        if (error) throw new Error('Não foi possível salvar o valor.');
+        const { error: clearError } = await supabase
+          .from('chip_counts')
+          .delete()
+          .eq('game_player_id', input.gamePlayerId);
+        if (clearError) throw new Error('Não foi possível salvar o valor.');
+      }
     },
     onSuccess: () => invalidateGame(game.id),
   });

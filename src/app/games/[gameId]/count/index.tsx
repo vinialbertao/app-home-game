@@ -52,7 +52,7 @@ function Counting({ game }: { game: CashGame }) {
   const denominations = toCashDenominations(game);
   const results = playerResults(players, denominations);
   const check = reconcile(players, denominations);
-  const notCounted = game.players.filter((p) => p.counts === null);
+  const notCounted = game.players.filter((p) => !p.isCounted);
   const allCounted = notCounted.length === 0;
 
   function closeSettlement() {
@@ -140,7 +140,7 @@ function Counting({ game }: { game: CashGame }) {
 
       {game.players.map((player) => {
         const result = results.find((r) => r.playerId === player.playerId)!;
-        const counted = player.counts !== null;
+        const counted = player.isCounted;
         return (
           <Card
             key={player.id}

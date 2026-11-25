@@ -310,6 +310,22 @@ begin
     insert into public.adjustments (game_id, game_player_id, amount_cents, reason) values (cash_game, cgp_a, -500, 'Ficha a mais');
     perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
     checks := checks + 1;
+
+    -- Valor total digitado (sem contar por cor): A diz que tem R$ 70 e vale no lugar das fichas
+    delete from public.adjustments where game_id = cash_game;
+    delete from public.chip_counts where game_player_id = cgp_a;
+    update public.game_players set counted_cents = 7000 where id = cgp_a;
+    perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
+    checks := checks + 1;
+
+    update public.game_players set counted_cents = 7001 where id = cgp_a;
+    begin
+      perform public.save_cash_settlement(cash_game, jsonb_build_array(jsonb_build_object('from', p_pedro, 'to', p_a, 'amount_cents', 2000)));
+      raise exception 'FALHA: aceitou acerto com o total digitado 1 centavo diferente';
+    exception when others then
+      if sqlerrm like 'FALHA%' then raise; end if;
+    end;
+    checks := checks + 1;
   end;
 
   -- ---------- painel: abre pelo código, sem Pix e sem ids ----------

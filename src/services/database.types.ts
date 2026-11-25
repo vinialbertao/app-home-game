@@ -279,6 +279,7 @@ export type Database = {
       }
       game_players: {
         Row: {
+          counted_cents: number | null
           created_at: string
           finish_position: number | null
           game_id: string
@@ -286,6 +287,7 @@ export type Database = {
           player_id: string
         }
         Insert: {
+          counted_cents?: number | null
           created_at?: string
           finish_position?: number | null
           game_id: string
@@ -293,6 +295,7 @@ export type Database = {
           player_id: string
         }
         Update: {
+          counted_cents?: number | null
           created_at?: string
           finish_position?: number | null
           game_id?: string

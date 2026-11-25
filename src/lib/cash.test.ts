@@ -101,3 +101,16 @@ describe('conferência que não bate', () => {
     expect(playerResults(fixed, KIT).find((r) => r.playerId === 'ana')?.net).toBe(5500);
   });
 });
+
+describe('valor total digitado direto', () => {
+  it('vale no lugar das fichas por cor', () => {
+    const typed = NIGHT.map((p) => (p.playerId === 'edu' ? { ...p, counts: {}, countedCents: 4950 } : p));
+    expect(playerResults(typed, KIT).find((r) => r.playerId === 'edu')?.counted).toBe(4950);
+    expect(reconcile(typed, KIT).ok).toBe(true);
+  });
+
+  it('total digitado zero é diferente de não contado', () => {
+    const typed = NIGHT.map((p) => (p.playerId === 'bruno' ? { ...p, counts: { c25: 9 }, countedCents: 0 } : p));
+    expect(playerResults(typed, KIT).find((r) => r.playerId === 'bruno')?.counted).toBe(0);
+  });
+});

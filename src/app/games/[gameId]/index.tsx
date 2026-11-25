@@ -110,7 +110,7 @@ function LiveTable({ game }: { game: CashGame }) {
                 <AppText variant="label">{player.name}</AppText>
                 <AppText variant="caption">
                   {rebuys === 0 ? 'Sem rebuy' : rebuys === 1 ? '1 rebuy' : `${rebuys} rebuys`}
-                  {player.counts ? ' · fichas contadas' : ''}
+                  {player.isCounted ? ' · fichas contadas' : ''}
                 </AppText>
               </View>
               <AppText variant="number">{formatBRL(total)}</AppText>

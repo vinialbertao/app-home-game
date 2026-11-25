@@ -2,14 +2,19 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, Button, Card, FormMessage, LoadingState, Screen } from '@/components';
+import { AppText, Button, Card, FormMessage, LoadingState, Screen, SegmentedControl, TextField } from '@/components';
 import { countedValue } from '@/lib/cash';
 import { parseWholeNumber } from '@/lib/kit';
-import { formatBRL } from '@/lib/money';
+import { formatBRL, parseBRL } from '@/lib/money';
 import { toCashDenominations, useCashGame, useSaveCount, type CashGame, type GamePlayer } from '@/services/games';
 import { colors, minTouchSize, radius, spacing, typography } from '@/theme';
 
-/** Contar as fichas de um jogador: quantidade de cada cor; o app soma em reais. */
+type Mode = 'chips' | 'total';
+
+/**
+ * Contar as fichas de um jogador, de um dos dois jeitos:
+ * por fichas (quantidade de cada cor, o app soma) ou pelo valor total que a pessoa já calculou.
+ */
 export default function CountPlayerScreen() {
   const { gameId, gamePlayerId } = useLocalSearchParams<{ gameId: string; gamePlayerId: string }>();
   const game = useCashGame(gameId);
@@ -22,25 +27,43 @@ export default function CountPlayerScreen() {
       </Screen>
     );
   }
+  if (!game.data.isHost) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: player.name }} />
+        <AppText muted>Só o host conta as fichas.</AppText>
+      </Screen>
+    );
+  }
   return <CountForm game={game.data} player={player} />;
 }
 
 function CountForm({ game, player }: { game: CashGame; player: GamePlayer }) {
   const saveCount = useSaveCount(game);
+  const [mode, setMode] = useState<Mode>(player.countedCents !== null ? 'total' : 'chips');
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(game.denominations.map((d) => [d.id, player.counts?.[d.id] ? String(player.counts[d.id]) : ''])),
   );
+  const [totalText, setTotalText] = useState(
+    player.countedCents !== null ? formatBRL(player.countedCents).replace('R$ ', '') : '',
+  );
   const [error, setError] = useState<string | null>(null);
 
+  // Por fichas
   const counts: Record<string, number> = {};
-  let invalid = false;
+  let invalidChips = false;
   for (const d of game.denominations) {
     const text = values[d.id]?.trim() ?? '';
     const quantity = text === '' ? 0 : parseWholeNumber(text);
-    if (quantity === null) invalid = true;
+    if (quantity === null) invalidChips = true;
     counts[d.id] = quantity ?? 0;
   }
-  const total = countedValue(counts, toCashDenominations(game));
+  const chipsTotal = countedValue(counts, toCashDenominations(game));
+
+  // Valor total
+  const typedTotal = totalText.trim() === '' ? null : parseBRL(totalText);
+
+  const total = mode === 'chips' ? chipsTotal : (typedTotal ?? 0);
   const paid = player.buyins.reduce((sum, b) => sum + b.amountCents, 0);
   const net = total - paid;
 
@@ -52,21 +75,21 @@ function CountForm({ game, player }: { game: CashGame; player: GamePlayer }) {
   }
 
   function save() {
-    if (invalid) return setError('Use só números inteiros nas quantidades.');
-    setError(null);
-    saveCount.mutate(
-      { gamePlayerId: player.id, counts },
-      { onSuccess: () => router.back(), onError: (e) => setError(e.message) },
-    );
-  }
-
-  if (!game.isHost) {
-    return (
-      <Screen>
-        <Stack.Screen options={{ title: player.name }} />
-        <AppText muted>Só o host conta as fichas.</AppText>
-      </Screen>
-    );
+    if (mode === 'chips') {
+      if (invalidChips) return setError('Use só números inteiros nas quantidades.');
+      setError(null);
+      saveCount.mutate(
+        { gamePlayerId: player.id, mode: 'chips', counts },
+        { onSuccess: () => router.back(), onError: (e) => setError(e.message) },
+      );
+    } else {
+      if (typedTotal === null) return setError('Digite o valor total em reais, como 85 ou 42,50.');
+      setError(null);
+      saveCount.mutate(
+        { gamePlayerId: player.id, mode: 'total', totalCents: typedTotal },
+        { onSuccess: () => router.back(), onError: (e) => setError(e.message) },
+      );
+    }
   }
 
   return (
@@ -89,45 +112,76 @@ function CountForm({ game, player }: { game: CashGame; player: GamePlayer }) {
       }
     >
       <Stack.Screen options={{ title: `Fichas de ${player.name}` }} />
-      <AppText muted>Quantas fichas de cada cor? Deixe em branco a cor que ele não tem.</AppText>
 
-      {game.denominations.map((d) => (
-        <Card key={d.id}>
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <AppText variant="label">{d.color}</AppText>
-              <AppText variant="caption">{formatBRL(d.value)} cada</AppText>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Uma ficha ${d.color} a menos`}
-              style={styles.stepButton}
-              onPress={() => step(d.id, -1)}
-            >
-              <AppText variant="heading">−</AppText>
-            </Pressable>
-            <TextInput
-              style={styles.input}
-              value={values[d.id]}
-              onChangeText={(text) => setValues((current) => ({ ...current, [d.id]: text }))}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor={colors.textFaint}
-              accessibilityLabel={`Quantidade de fichas ${d.color}`}
-              keyboardAppearance="dark"
-              selectTextOnFocus
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Uma ficha ${d.color} a mais`}
-              style={styles.stepButton}
-              onPress={() => step(d.id, 1)}
-            >
-              <AppText variant="heading">+</AppText>
-            </Pressable>
-          </View>
+      <SegmentedControl<Mode>
+        accessibilityLabel="Como contar"
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          setError(null);
+        }}
+        options={[
+          { value: 'chips', label: 'Por fichas' },
+          { value: 'total', label: 'Valor total' },
+        ]}
+      />
+
+      {mode === 'total' ? (
+        <Card>
+          <TextField
+            label="Quanto deu, em reais?"
+            value={totalText}
+            onChangeText={setTotalText}
+            keyboardType="decimal-pad"
+            placeholder="85,00"
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={save}
+            hint="Para quem já fez a conta das próprias fichas. Vale no lugar da contagem por cor."
+          />
         </Card>
-      ))}
+      ) : (
+        <>
+          <AppText muted>Quantas fichas de cada cor? Deixe em branco a cor que ele não tem.</AppText>
+          {game.denominations.map((d) => (
+            <Card key={d.id}>
+              <View style={styles.row}>
+                <View style={styles.flex}>
+                  <AppText variant="label">{d.color}</AppText>
+                  <AppText variant="caption">{formatBRL(d.value)} cada</AppText>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Uma ficha ${d.color} a menos`}
+                  style={styles.stepButton}
+                  onPress={() => step(d.id, -1)}
+                >
+                  <AppText variant="heading">−</AppText>
+                </Pressable>
+                <TextInput
+                  style={styles.input}
+                  value={values[d.id]}
+                  onChangeText={(text) => setValues((current) => ({ ...current, [d.id]: text }))}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={colors.textFaint}
+                  accessibilityLabel={`Quantidade de fichas ${d.color}`}
+                  keyboardAppearance="dark"
+                  selectTextOnFocus
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Uma ficha ${d.color} a mais`}
+                  style={styles.stepButton}
+                  onPress={() => step(d.id, 1)}
+                >
+                  <AppText variant="heading">+</AppText>
+                </Pressable>
+              </View>
+            </Card>
+          ))}
+        </>
+      )}
 
       <FormMessage message={error} />
     </Screen>
