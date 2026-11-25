@@ -41,8 +41,8 @@ export default function JoinGroupScreen() {
       }
     >
       <AppText muted>
-        Copie a mensagem de convite que chegou no WhatsApp e toque em “Colar o convite copiado”, ou digite o
-        código.
+        Copie o código do convite (ou a mensagem inteira) que chegou no WhatsApp e toque em “Colar o convite
+        copiado”, ou digite o código.
       </AppText>
       <TextField
         label="Código do convite"

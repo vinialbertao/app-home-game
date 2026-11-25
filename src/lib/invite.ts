@@ -26,11 +26,16 @@ export function formatInviteCode(code: string): string {
   return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
 }
 
-/** Mensagem pronta para mandar no WhatsApp. */
+/**
+ * Mensagem pronta para mandar no WhatsApp. O código vai sozinho na última linha e em negrito
+ * (*...* no WhatsApp), para ficar fácil de achar e copiar.
+ */
 export function buildInviteMessage(groupName: string, code: string): string {
   return [
     `Bora jogar! Você foi convidado para o grupo "${groupName}" no Mesa Final HG.`,
     '',
-    `No app, toque em "Entrar com código" e use: ${formatInviteCode(code)}`,
+    'No app, toque em "Entrar com código" e use este código:',
+    '',
+    `*${formatInviteCode(code)}*`,
   ].join('\n');
 }

@@ -46,4 +46,9 @@ describe('formatInviteCode e mensagem', () => {
     expect(message).toContain('"Turma da firma"');
     expect(message).toContain('K7MQ-2XPA');
   });
+
+  it('põe o código sozinho na última linha, em negrito', () => {
+    const lines = buildInviteMessage('Turma da firma', 'K7MQ2XPA').split('\n');
+    expect(lines.at(-1)).toBe('*K7MQ-2XPA*');
+  });
 });

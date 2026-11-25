@@ -1,4 +1,6 @@
+import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Card, LoadingState, Screen } from '@/components';
@@ -27,6 +29,7 @@ export default function GroupScreen() {
   const tournamentKit = useGroupKit(groupId, 'tournament', group.data?.tournamentKitId);
   const games = useGroupGames(groupId);
   const openSettlements = useGroupOpenSettlements(groupId);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   if (!group.data) {
     return (
@@ -42,6 +45,12 @@ export default function GroupScreen() {
   const pendingCount = members.data?.filter((m) => !linkedIds.has(m.userId)).length ?? 0;
   const liveGames = games.data?.filter((g) => g.status === 'live' || g.status === 'counting') ?? [];
   const finishedGames = games.data?.filter((g) => g.status === 'finished') ?? [];
+
+  async function copyInviteCode() {
+    if (!group.data) return;
+    await Clipboard.setStringAsync(formatInviteCode(group.data.inviteCode));
+    setCodeCopied(true);
+  }
 
   async function shareInvite() {
     if (!group.data) return;
@@ -110,6 +119,11 @@ export default function GroupScreen() {
           {formatInviteCode(group.data.inviteCode)}
         </AppText>
         <Button title="Mandar convite" variant="secondary" onPress={shareInvite} />
+        <Button
+          title={codeCopied ? 'Código copiado' : 'Copiar só o código'}
+          variant="ghost"
+          onPress={copyInviteCode}
+        />
       </Card>
 
       <Card
