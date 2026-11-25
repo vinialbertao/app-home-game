@@ -146,5 +146,11 @@ Decisões tomadas:
   no painel "Email" da lista de provedores, "Enable email provider" LIGADO (desligar ele bloqueia o cadastro).
 - Convite para grupo por código colado no app até a Fase 6; depois vira link clicável (25/11).
 - "Esqueci a senha" fica para a Fase 7; até lá a senha é redefinida pelo painel do Supabase (25/11).
+- Cash: ficha é dinheiro. Cada grupo tem um kit do cash (valor de cada cor em centavos) e um kit do torneio
+  (valor em pontos). No cash não há conversão: valor contado = soma de quantidade × valor (25/11).
+- Cash: todos começam com o mesmo buy-in; o rebuy tem valor livre (vem com o buy-in inicial, editável).
+  Torneio: rebuy = buy-in; o add-on é que tem valor próprio (25/11).
+- Conferência do cash que não bate: o app não decide. O host reconta ou registra um ajuste com motivo e
+  escolhe em qual jogador ele cai (`adjustments.game_player_id`) (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
