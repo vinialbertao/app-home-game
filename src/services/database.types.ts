@@ -769,6 +769,7 @@ export type Database = {
       tables: {
         Row: {
           active: boolean
+          dealer_game_player_id: string | null
           game_id: string
           id: string
           number: number
@@ -776,6 +777,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          dealer_game_player_id?: string | null
           game_id: string
           id?: string
           number: number
@@ -783,12 +785,20 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          dealer_game_player_id?: string | null
           game_id?: string
           id?: string
           number?: number
           seat_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "tables_dealer_fkey"
+            columns: ["dealer_game_player_id", "game_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id", "game_id"]
+          },
           {
             foreignKeyName: "tables_game_id_fkey"
             columns: ["game_id"]
@@ -816,6 +826,21 @@ export type Database = {
       get_panel: { Args: { p_code: string }; Returns: Json }
       join_group: { Args: { p_invite_code: string }; Returns: string }
       my_birth_date: { Args: never; Returns: string }
+      eliminate_player: { Args: { p_game_player_id: string }; Returns: number }
+      player_busted: { Args: { p_game_player_id: string; p_rebuy: boolean }; Returns: Json }
+      set_seating: { Args: { p_game_id: string; p_tables: Json }; Returns: undefined }
+      start_tournament: {
+        Args: {
+          p_group_id: string
+          p_kit_id: string
+          p_levels: Json
+          p_name: string
+          p_player_ids: string[]
+          p_settings: Json
+        }
+        Returns: string
+      }
+      undo_elimination: { Args: { p_game_player_id: string }; Returns: undefined }
       restore_player: { Args: { p_player_id: string }; Returns: undefined }
       save_cash_settlement: {
         Args: { p_game_id: string; p_transfers: Json }
