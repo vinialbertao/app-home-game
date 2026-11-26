@@ -17,6 +17,7 @@ import {
 import { canRebuyMore, rebuyOpen } from '@/lib/tournament';
 import {
   spentCents,
+  useBeginTournament,
   toSeatedTables,
   usePlayerBusted,
   useSetSeating,
@@ -49,6 +50,7 @@ function TournamentTables({ game }: { game: TournamentGame }) {
   const setSeating = useSetSeating(game);
   const busted = usePlayerBusted(game);
   const undo = useUndoElimination(game);
+  const begin = useBeginTournament(game);
   const [message, setMessage] = useState<{ text: string; tone: 'error' | 'success' } | null>(null);
 
   const byId = new Map(game.players.map((p) => [p.id, p]));
@@ -72,8 +74,30 @@ function TournamentTables({ game }: { game: TournamentGame }) {
       ? planBalance(tables, { hostPlayerId: hostGamePlayerId, maxSeats, random: seededRandom(seed + 1) })
       : null;
 
+  const started = game.status === 'live';
   const iControl = (table: SeatedTable) =>
-    game.isHost || (game.myGamePlayerId !== null && table.dealerId === game.myGamePlayerId);
+    started && (game.isHost || (game.myGamePlayerId !== null && table.dealerId === game.myGamePlayerId));
+  const tablesWithoutDealer = tables.filter((t) => t.number > 1 && !t.dealerId).map((t) => t.number);
+
+  function startTournament() {
+    if (tablesWithoutDealer.length > 0) {
+      return setMessage({
+        text: `Escolha o dealer da mesa ${tablesWithoutDealer.join(' e da mesa ')} antes de começar.`,
+        tone: 'error',
+      });
+    }
+    Alert.alert('Começar o torneio?', 'As mesas ficam como estão e o nível 1 começa agora.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Começar',
+        onPress: () =>
+          begin.mutate(undefined, {
+            onSuccess: () => setMessage({ text: 'Torneio começou. Boa sorte a todos!', tone: 'success' }),
+            onError: fail,
+          }),
+      },
+    ]);
+  }
 
   const fail = (e: Error) => setMessage({ text: e.message, tone: 'error' });
 
@@ -133,12 +157,15 @@ function TournamentTables({ game }: { game: TournamentGame }) {
     );
   }
 
-  function onPlayer(table: SeatedTable, player: TournamentPlayer) {
-    if (!iControl(table)) return;
-    Alert.alert(player.name, undefined, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Caiu', style: 'destructive', onPress: () => onCaiu(player) },
-    ]);
+  function confirmRebuy(player: TournamentPlayer) {
+    Alert.alert(
+      `Rebuy de ${player.name}?`,
+      `${formatBRL(game.settings.buyinCents)} e ${game.settings.startingStack} fichas a mais.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Registrar rebuy', onPress: () => rebuy(player) },
+      ],
+    );
   }
 
   function chooseDealer(table: SeatedTable) {
@@ -312,32 +339,44 @@ function TournamentTables({ game }: { game: TournamentGame }) {
               const rebuys = player.buyins.filter((b) => b.kind === 'rebuy').length;
               const isMe = player.id === game.myGamePlayerId;
               return (
-                <Pressable
-                  key={seat.playerId}
-                  accessibilityRole={controls ? 'button' : undefined}
-                  accessibilityLabel={controls ? `${player.name}: registrar que caiu` : player.name}
-                  disabled={!controls}
-                  onPress={() => onPlayer(table, player)}
-                  style={[styles.seat, isMe && styles.seatMe]}
-                >
+                <View key={seat.playerId} style={[styles.seat, isMe && styles.seatMe]}>
                   <AppText variant="number" style={styles.seatNumber}>
                     {seat.seat}
                   </AppText>
-                  <AppText variant="label" style={styles.flex}>
-                    {player.name}
-                    {table.dealerId === player.id ? ' · dealer' : ''}
-                  </AppText>
-                  {rebuys > 0 ? <AppText variant="caption">{rebuys} rebuy</AppText> : null}
-                  {controls ? <AppText variant="caption">Caiu ›</AppText> : null}
-                </Pressable>
+                  <View style={styles.flex}>
+                    <AppText variant="label">
+                      {player.name}
+                      {table.dealerId === player.id ? ' · dealer' : ''}
+                    </AppText>
+                    {rebuys > 0 ? <AppText variant="caption">{rebuys} rebuy</AppText> : null}
+                  </View>
+                  {controls && openRebuy && canRebuyMore(game.settings, rebuys) ? (
+                    <Button title="Rebuy" variant="secondary" compact onPress={() => confirmRebuy(player)} />
+                  ) : null}
+                  {controls ? <Button title="Caiu" variant="danger" compact onPress={() => onCaiu(player)} /> : null}
+                </View>
               );
             })}
           </Card>
         );
       })}
 
-      {game.isHost && game.status === 'setup' && out.length === 0 ? (
-        <Button title="Sortear as mesas de novo" variant="secondary" onPress={redraw} loading={setSeating.isPending} />
+      {game.status === 'setup' ? (
+        game.isHost ? (
+          <>
+            <Button title="Começar torneio" onPress={startTournament} loading={begin.isPending} />
+            <Button
+              title="Sortear as mesas de novo"
+              variant="secondary"
+              onPress={redraw}
+              loading={setSeating.isPending}
+            />
+          </>
+        ) : (
+          <AppText variant="caption" style={styles.center}>
+            Mesas sorteadas. Esperando o host começar o torneio.
+          </AppText>
+        )
       ) : null}
 
       {/* Quem já caiu */}
@@ -376,6 +415,7 @@ function TournamentTables({ game }: { game: TournamentGame }) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1 },
+  center: { textAlign: 'center' },
   gold: { color: colors.gold },
   warning: { color: colors.warning },
   alertCard: { borderColor: colors.gold },

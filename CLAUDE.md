@@ -236,5 +236,9 @@ Decisões tomadas:
   rebuy, o app pergunta "Vai dar rebuy?": Sim registra o rebuy (respeitando o máximo por pessoa) e ele continua;
   Não elimina. Depois do intervalo do add-on, "Caiu" só elimina. O jogador vê na tela dele quanto já gastou
   (buy-in + rebuys + add-on), que é o que ele deve ao host (25/11).
+- Torneio, começar: depois do sorteio o host pode sortear de novo e escolher os dealers; o torneio só começa no
+  botão "Começar torneio" (exige dealer em todas as mesas além da 1). Antes disso não há "Caiu" nem rebuy; depois,
+  "Sortear de novo" some. Ao lado do "Caiu" há o botão "Rebuy", para quem quer rebuy sem ter caído (com
+  confirmação; só no período de rebuy e dentro do máximo por pessoa) (26/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.

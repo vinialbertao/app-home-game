@@ -21,10 +21,14 @@ begin
     '[{"position":1,"is_break":false,"small_blind":25,"big_blind":50,"duration_minutes":20},
       {"position":2,"is_break":true,"duration_minutes":10},
       {"position":3,"is_break":false,"small_blind":50,"big_blind":100,"duration_minutes":20}]', kit, p);
-  select array_agg(id order by created_at, id) into gp from public.game_players where game_id = game;
+  select array_agg(gp2.id order by pl.name) into gp from public.game_players gp2 join public.players pl on pl.id = gp2.player_id where gp2.game_id = game;
   perform public.set_seating(game, jsonb_build_array(
     jsonb_build_object('number',1,'dealer',null,'seats',jsonb_build_array(jsonb_build_object('seat',1,'game_player_id',gp[1]),jsonb_build_object('seat',2,'game_player_id',gp[2]))),
     jsonb_build_object('number',2,'dealer',gp[3],'seats',jsonb_build_array(jsonb_build_object('seat',1,'game_player_id',gp[3]),jsonb_build_object('seat',2,'game_player_id',gp[4]),jsonb_build_object('seat',3,'game_player_id',gp[5])))));
+  -- antes de começar, "Caiu" é recusado
+  begin perform public.player_busted(gp[1], false); raise exception 'FALHA caiu antes de começar';
+  exception when check_violation then null; end;
+  update public.games set status = 'live' where id = game;
   perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
   perform public.join_group(inv);
   r := public.player_busted(gp[4], true);
@@ -42,7 +46,7 @@ begin
   exception when insufficient_privilege then null; end;
   checks := checks + 1;
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
-  update public.games set status = 'live', current_level = 2 where id = game;
+  update public.games set current_level = 2 where id = game;
   r := public.player_busted(gp[2], true);
   update public.games set current_level = 3 where id = game;
   begin perform public.player_busted(gp[1], true); raise exception 'FALHA rebuy depois do add-on';

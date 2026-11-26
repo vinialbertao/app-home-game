@@ -269,3 +269,20 @@ export function useUndoElimination(game: { id: string; groupId: string }) {
 export function spentCents(player: Pick<TournamentPlayer, 'buyins'>): Cents {
   return player.buyins.reduce((sum, b) => sum + b.amountCents, 0);
 }
+
+/** "Começar torneio": o host confirma as mesas; o nível 1 começa agora (o relógio da 5c conta a partir daqui). */
+export function useBeginTournament(game: { id: string; groupId: string }) {
+  return useMutation({
+    mutationFn: async () => {
+      const now = new Date().toISOString();
+      const { data, error } = await getSupabase()
+        .from('games')
+        .update({ status: 'live', started_at: now, current_level: 1, level_started_at: now, paused_at: null })
+        .eq('id', game.id)
+        .eq('status', 'setup')
+        .select('id');
+      if (error || !data?.length) throw new Error('Não foi possível começar. Só o host começa o torneio.');
+    },
+    onSuccess: () => invalidate(game),
+  });
+}

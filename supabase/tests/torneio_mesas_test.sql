@@ -22,7 +22,7 @@ begin
   if (select count(*) from public.buyins where game_id = game and amount_cents = 5000 and chips = 3000) <> 4 then raise exception 'FALHA buyins'; end if;
   if (select count(*) from public.levels l join public.games ga on ga.structure_id = l.structure_id where ga.id = game) <> 2 then raise exception 'FALHA níveis'; end if;
   checks := checks + 1;
-  select array_agg(id order by created_at, id) into gp from public.game_players where game_id = game;
+  select array_agg(gp2.id order by pl.name) into gp from public.game_players gp2 join public.players pl on pl.id = gp2.player_id where gp2.game_id = game;
   t1 := jsonb_build_object('number', 1, 'dealer', null, 'seats', jsonb_build_array(
     jsonb_build_object('seat', 1, 'game_player_id', gp[1]), jsonb_build_object('seat', 2, 'game_player_id', gp[2])));
   t2 := jsonb_build_object('number', 2, 'dealer', gp[3], 'seats', jsonb_build_array(
