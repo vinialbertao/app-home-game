@@ -43,7 +43,7 @@ src/app/            telas (Expo Router: cada arquivo é uma rota)
   games/[gameId]/add-player.tsx    Quem chegou depois
   games/[gameId]/count/            Contagem por cor e conferência; adjust.tsx = ajuste do host
   games/[gameId]/settlement.tsx    Acerto: resultado, Pix (pix/[settlementId] = QR), Paguei/Recebi, resumo
-  groups/[groupId]/tournament.tsx  Torneio
+  groups/[groupId]/tournament.tsx  Torneio: gerar/editar a estrutura (5a) e estruturas salvas do grupo
   profile.tsx       Meus dados (foto, nome, ID, Pix, histórico)
 src/components/     componentes visuais reutilizáveis (importe de '@/components')
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
@@ -123,6 +123,10 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Contagem do cash, de um dos dois jeitos: por cor (linhas em `chip_counts`, todas as cores, inclusive as
   zeradas) ou pelo valor total digitado (`game_players.counted_cents`). Quando o total existe, ele vale no lugar
   das fichas (no app e no `save_cash_settlement`); salvar um jeito apaga o outro.
+- Estrutura do torneio: `structures.settings` guarda `TournamentSettings` (`src/lib/tournament.ts`: entradas,
+  stack por cor, relógio da jogada, porcentagens da premiação); `levels` guarda níveis e intervalos (com color up).
+  O intervalo do add-on não é gravado: é o primeiro intervalo depois de `rebuy.untilLevel` (`markAddonBreak`).
+  Gerador em `src/lib/structure.ts`, premiação em `src/lib/prizes.ts`.
 - Status do cash: `live` (mesa) → `counting` (contagem/conferência) → `finished` (acerto salvo).
 - Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
 
