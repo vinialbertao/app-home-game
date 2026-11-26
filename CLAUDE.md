@@ -195,5 +195,12 @@ Decisões tomadas:
   ele para a lista (25/11).
 - Quem o admin tirou do grupo não volta pelo convite que já tem: só o admin traz de volta, por "Voltar para a
   lista". Quem saiu do grupo sozinho pode voltar pelo convite (25/11).
+- Torneio: toda mesa tem um dealer. Na mesa do host é o host; nas outras, o host escolhe um jogador do torneio
+  (pode trocar a qualquer momento). Host e dealers controlam o relógio da jogada da própria mesa (25/11).
+- Relógio da jogada (shot clock), como na WSOP: 20 s antes do flop e 30 s depois; 6 time banks de 30 s por
+  jogador no torneio, sem ganhar mais nos intervalos; ligado desde o nível 1. Tudo editável no começo do torneio.
+  O jogador usa o time bank na própria tela (o dealer usa por quem não tem o app). Tempo esgotado: o app só
+  avisa "fold", quem aplica é o dealer. Time banks que sobram se perdem na eliminação. Esse relógio usa o tempo
+  real do Supabase já na Fase 5 (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
