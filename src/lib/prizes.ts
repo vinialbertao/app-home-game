@@ -44,7 +44,8 @@ export function defaultPrizePercents(places: number): number[] {
 /** Erro em português se as porcentagens não servem, ou null. */
 export function checkPrizePercents(percents: number[]): string | null {
   if (percents.length === 0) return 'Precisa ter pelo menos 1 premiado.';
-  if (percents.some((p) => !Number.isInteger(p) || p <= 0)) return 'Cada porcentagem precisa ser um número inteiro maior que zero.';
+  if (percents.some((p) => !Number.isInteger(p) || p <= 0))
+    return 'Cada porcentagem precisa ser um número inteiro maior que zero.';
   const sum = percents.reduce((a, b) => a + b, 0);
   if (sum !== 100) return `As porcentagens somam ${sum}%. Precisam somar 100%.`;
   for (let i = 1; i < percents.length; i++) {

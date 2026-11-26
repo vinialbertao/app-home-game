@@ -18,6 +18,7 @@ export const queryKeys = {
   players: (groupId: string) => ['players', groupId] as const,
   members: (groupId: string) => ['members', groupId] as const,
   kits: (groupId: string) => ['kits', groupId] as const,
+  structures: (groupId: string) => ['structures', groupId] as const,
   game: (gameId: string) => ['game', gameId] as const,
   groupGames: (groupId: string) => ['group-games', groupId] as const,
   groupSettlements: (groupId: string) => ['group-settlements', groupId] as const,

@@ -216,8 +216,7 @@ export function generateStructure(input: StructureInput): Structure {
   let previousBigBlind = 0;
   for (let i = 1; i <= totalLevels; i++) {
     const target = firstBigBlind * Math.pow(ratio, i - 1);
-    const bigBlind =
-      i === 1 ? firstBigBlind : pickBigBlind(ladder, previousBigBlind, target, kit[minChipIndex].value);
+    const bigBlind = i === 1 ? firstBigBlind : pickBigBlind(ladder, previousBigBlind, target, kit[minChipIndex].value);
     levels.push({ kind: 'level', smallBlind: bigBlind / 2, bigBlind, ante: 0, minutes: levelMinutes });
     previousBigBlind = bigBlind;
 
@@ -264,7 +263,8 @@ export function checkStructure(levels: StructureLevel[]): string[] {
       problems.push(`${name}: a duração precisa ser de 1 a 240 minutos.`);
     }
     if (level.kind === 'level') {
-      if (level.smallBlind <= 0 || level.bigBlind <= 0) problems.push(`${name}: os blinds precisam ser maiores que zero.`);
+      if (level.smallBlind <= 0 || level.bigBlind <= 0)
+        problems.push(`${name}: os blinds precisam ser maiores que zero.`);
       else if (level.bigBlind < level.smallBlind) problems.push(`${name}: o big blind não pode ser menor que o small.`);
       if (level.ante < 0) problems.push(`${name}: o ante não pode ser negativo.`);
     }

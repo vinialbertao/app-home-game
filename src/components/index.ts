@@ -6,6 +6,7 @@ export { DeleteGameButton } from './DeleteGameButton';
 export { EmptyState } from './EmptyState';
 export { FormMessage } from './FormMessage';
 export { LoadingState } from './LoadingState';
+export { MoneyField, NumberField } from './NumberField';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export { ServerStatusBadge } from './ServerStatusBadge';
