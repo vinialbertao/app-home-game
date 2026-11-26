@@ -29,6 +29,7 @@ import {
   type StructureLevel,
 } from '@/lib/structure';
 import {
+  checkKit,
   checkSettings,
   draftFromGenerated,
   estimatedPool,
@@ -284,7 +285,7 @@ function DraftEditor({
       const next = { ...current.settings, ...changes };
       return {
         settings: next,
-        levels: markAddonBreak(current.levels, next.rebuy.untilLevel, next.addon.enabled),
+        levels: markAddonBreak(current.levels, next.rebuy.untilLevel, next.addon.enabled, { insert: true }),
       };
     });
   }
@@ -292,7 +293,14 @@ function DraftEditor({
   function setLevels(update: (levels: StructureLevel[]) => StructureLevel[]) {
     setDraft((current) => ({
       ...current,
-      levels: markAddonBreak(update(current.levels), current.settings.rebuy.untilLevel, current.settings.addon.enabled),
+      levels: markAddonBreak(
+        update(current.levels),
+        current.settings.rebuy.untilLevel,
+        current.settings.addon.enabled,
+        {
+          insert: true,
+        },
+      ),
     }));
   }
 
@@ -319,13 +327,27 @@ function DraftEditor({
     setOpenRow(levels.length);
   }
 
+  const kitCheck = checkKit(kit, settings);
+
   function saveStructure() {
     const problems = [...checkStructure(levels), ...checkSettings(settings, levelCount)];
+    if (kitCheck.blocking) problems.push(kitCheck.blocking);
     const prizeProblem = checkPrizePercents(settings.prizePercents);
     if (prizeProblem) problems.push(prizeProblem);
     if (!name.trim()) problems.push('Dê um nome para a estrutura, como "Torneio de sexta".');
     if (problems.length) return setMessage({ text: problems.join('\n'), tone: 'error' });
     setMessage(null);
+    if (kitCheck.warning) {
+      Alert.alert('Pode faltar ficha', `${kitCheck.warning}\n\nSalvar mesmo assim?`, [
+        { text: 'Voltar e ajustar', style: 'cancel' },
+        { text: 'Salvar', onPress: doSave },
+      ]);
+      return;
+    }
+    doSave();
+  }
+
+  function doSave() {
     save.mutate(
       { id: savedId, name, draft },
       {
@@ -354,15 +376,22 @@ function DraftEditor({
         </>
       }
     >
-      {initial.warnings.length > 0 ? (
-        <Card style={styles.warningCard}>
-          {initial.warnings.map((w) => (
-            <AppText key={w} variant="label" style={styles.warning}>
-              {w}
-            </AppText>
-          ))}
+      {kitCheck.blocking || kitCheck.warning ? (
+        <Card style={kitCheck.blocking ? styles.blockingCard : styles.warningCard}>
+          <AppText variant="label" style={kitCheck.blocking ? styles.blocking : styles.warning}>
+            {kitCheck.blocking ?? kitCheck.warning}
+          </AppText>
         </Card>
       ) : null}
+      {initial.warnings
+        .filter((w) => w.includes('stack ficou pequeno'))
+        .map((w) => (
+          <Card key={w} style={styles.warningCard}>
+            <AppText variant="label" style={styles.warning}>
+              {w}
+            </AppText>
+          </Card>
+        ))}
 
       {/* Stack inicial */}
       <Card>
@@ -691,6 +720,8 @@ const styles = StyleSheet.create({
   gold: { color: colors.gold },
   warning: { color: colors.warning },
   warningCard: { borderColor: colors.warning },
+  blocking: { color: colors.danger },
+  blockingCard: { borderColor: colors.danger },
   prizeValue: { minWidth: 110, textAlign: 'right', paddingTop: spacing.lg },
   levelRow: {
     backgroundColor: colors.surface,

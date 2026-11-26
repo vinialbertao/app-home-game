@@ -1,6 +1,13 @@
 import type { Cents } from './money';
 import { defaultPrizePercents, defaultPrizePlaces } from './prizes';
-import { levelNumbers, type StackChip, type StructureLevel } from './structure';
+import {
+  expectedRebuys,
+  levelNumbers,
+  stacksAvailable,
+  type KitChip,
+  type StackChip,
+  type StructureLevel,
+} from './structure';
 
 /** Relógio da jogada (shot clock). Padrão da WSOP: 20 s antes do flop, 30 s depois, 6 time banks de 30 s. */
 export type ShotClockSettings = {
@@ -43,21 +50,65 @@ export function defaultPrizes(players: number): number[] {
   return defaultPrizePercents(defaultPrizePlaces(players));
 }
 
-/** Marca como "intervalo do add-on" o primeiro intervalo depois do último nível de rebuy. */
+/**
+ * O add-on é no intervalo logo depois do último nível de rebuy (`untilLevel`).
+ * Se não há intervalo ali e `insert` for true, cria um de 10 minutos. Intervalos que o app tinha criado
+ * para o add-on num lugar antigo saem. Os outros intervalos nunca são do add-on.
+ */
 export function markAddonBreak(
   levels: StructureLevel[],
   untilLevel: number | null,
   addonEnabled: boolean,
+  { insert = false }: { insert?: boolean } = {},
 ): StructureLevel[] {
-  const numbers = levelNumbers(levels);
-  const at = untilLevel === null ? -1 : numbers.indexOf(untilLevel);
-  let marked = false;
-  return levels.map((level, i) => {
-    if (level.kind !== 'break') return level;
-    const isAddon = addonEnabled && !marked && at >= 0 && i > at;
-    if (isAddon) marked = true;
-    return { ...level, addon: isAddon };
-  });
+  const cleaned = levels
+    .filter((level) => !(level.kind === 'break' && level.addedForAddon))
+    .map((level) => (level.kind === 'break' ? { ...level, addon: false } : level));
+  if (!addonEnabled || untilLevel === null) return cleaned;
+
+  const at = levelNumbers(cleaned).indexOf(untilLevel);
+  if (at < 0) return cleaned;
+  const next = cleaned[at + 1];
+  if (next?.kind === 'break') {
+    return cleaned.map((level, i) => (i === at + 1 ? { ...next, addon: true } : level));
+  }
+  if (!insert || at === cleaned.length - 1) return cleaned;
+  return [
+    ...cleaned.slice(0, at + 1),
+    { kind: 'break', minutes: 10, colorUp: null, addon: true, addedForAddon: true },
+    ...cleaned.slice(at + 1),
+  ];
+}
+
+/**
+ * Confere se o kit dá conta do torneio, sempre com os números atuais (jogadores, stack, rebuy, add-on).
+ * `blocking`: não dá nem para o stack inicial de todo mundo (não deixa salvar).
+ * `warning`: pode faltar ficha se metade pedir rebuy e quase todos fizerem add-on (pede confirmação).
+ */
+export function checkKit(
+  kit: KitChip[],
+  settings: TournamentSettings,
+): { blocking: string | null; warning: string | null } {
+  const available = stacksAvailable(kit, settings.stack);
+  if (settings.stack.every((chip) => chip.count === 0) || available < settings.players) {
+    return {
+      blocking: `O kit monta ${available} stacks de ${settings.startingStack} e o torneio tem ${settings.players} jogadores. Diminua o stack ou os jogadores.`,
+      warning: null,
+    };
+  }
+  const rebuys = expectedRebuys(settings.players, settings.rebuy);
+  const addonStacks =
+    settings.addon.enabled && settings.startingStack > 0
+      ? Math.ceil((settings.players * settings.addon.chips) / settings.startingStack)
+      : 0;
+  const needed = settings.players + rebuys + addonStacks;
+  if (available < needed) {
+    return {
+      blocking: null,
+      warning: `Pode faltar ficha: o kit monta ${available} stacks e, se metade pedir rebuy e todos fizerem add-on, são precisos ${needed}.`,
+    };
+  }
+  return { blocking: null, warning: null };
 }
 
 /** Arrecadação prevista só com os buy-ins (para mostrar os prêmios antes do torneio). */

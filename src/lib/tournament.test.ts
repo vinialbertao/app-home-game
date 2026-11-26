@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import type { StructureLevel } from './structure';
 import {
+  checkKit,
   checkSettings,
   DEFAULT_SHOT_CLOCK,
   estimatedPool,
@@ -32,10 +33,11 @@ const settings: TournamentSettings = {
 };
 
 describe('markAddonBreak', () => {
-  it('marca só o primeiro intervalo depois do último nível de rebuy', () => {
-    const levels = [level(50), pause, level(100), level(200), level(300), pause, level(400), pause];
-    const marked = markAddonBreak(levels, 3, true);
-    expect(marked.map((l) => l.kind === 'break' && l.addon)).toEqual([
+  const levels = [level(50), pause, level(100), level(200), level(300), pause, level(400), pause];
+  const addonFlags = (l: StructureLevel[]) => l.map((x) => x.kind === 'break' && x.addon);
+
+  it('marca o intervalo logo depois do último nível de rebuy', () => {
+    expect(addonFlags(markAddonBreak(levels, 4, true))).toEqual([
       false,
       false,
       false,
@@ -46,9 +48,22 @@ describe('markAddonBreak', () => {
       false,
     ]);
   });
+  it('sem intervalo logo depois, cria um de 10 minutos (com insert)', () => {
+    const marked = markAddonBreak(levels, 2, true, { insert: true });
+    expect(marked).toHaveLength(levels.length + 1);
+    expect(marked[3]).toMatchObject({ kind: 'break', minutes: 10, addon: true });
+  });
+  it('mudando o período, o intervalo criado sai do lugar antigo', () => {
+    const first = markAddonBreak(levels, 2, true, { insert: true });
+    const moved = markAddonBreak(first, 4, true, { insert: true });
+    expect(moved).toHaveLength(levels.length);
+    expect(addonFlags(moved)).toEqual([false, false, false, false, false, true, false, false]);
+  });
+  it('sem insert (estrutura salva), não cria intervalo', () => {
+    expect(markAddonBreak(levels, 2, true)).toHaveLength(levels.length);
+  });
   it('sem add-on, nenhum intervalo é do add-on', () => {
-    const marked = markAddonBreak([level(50), pause], 1, false);
-    expect(marked[1]).toMatchObject({ addon: false });
+    expect(addonFlags(markAddonBreak(levels, 4, false)).some(Boolean)).toBe(false);
   });
 });
 
@@ -71,5 +86,38 @@ describe('checkSettings', () => {
     expect(checkSettings({ ...settings, addon: { enabled: true, cents: 0, chips: 3000 } }, 12)).toEqual([
       'Digite o valor e as fichas do add-on.',
     ]);
+  });
+});
+
+describe('checkKit', () => {
+  const kit = [
+    { color: 'Branca', value: 25, quantity: 100 },
+    { color: 'Vermelha', value: 100, quantity: 100 },
+    { color: 'Verde', value: 500, quantity: 50 },
+    { color: 'Preta', value: 1000, quantity: 50 },
+  ];
+  const stack = [
+    { color: 'Branca', value: 25, count: 8 },
+    { color: 'Vermelha', value: 100, count: 8 },
+    { color: 'Verde', value: 500, count: 4 },
+    { color: 'Preta', value: 1000, count: 2 },
+  ];
+  const withStack = { ...settings, stack, startingStack: 5000, addon: { enabled: true, cents: 5000, chips: 5000 } };
+
+  it('8 jogadores com stack de 5.000: dá para todos, mas pode faltar com rebuys e add-on', () => {
+    const result = checkKit(kit, withStack);
+    expect(result.blocking).toBeNull();
+    expect(result.warning).toMatch(/Pode faltar ficha: o kit monta 12 stacks/);
+  });
+  it('14 jogadores: não dá nem para o stack inicial', () => {
+    expect(checkKit(kit, { ...withStack, players: 14 }).blocking).toMatch(/monta 12 stacks/);
+  });
+  it('sem rebuy e sem add-on, 8 jogadores cabem sem aviso', () => {
+    const result = checkKit(kit, {
+      ...withStack,
+      rebuy: { enabled: false, maxPerPlayer: null, untilLevel: null },
+      addon: { enabled: false, cents: 0, chips: 0 },
+    });
+    expect(result).toEqual({ blocking: null, warning: null });
   });
 });

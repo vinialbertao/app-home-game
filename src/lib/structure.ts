@@ -10,7 +10,14 @@ export type StackChip = { color: string; value: number; count: number };
 
 export type StructureLevel =
   | { kind: 'level'; smallBlind: number; bigBlind: number; ante: number; minutes: number }
-  | { kind: 'break'; minutes: number; colorUp: string | null; addon: boolean };
+  | {
+      kind: 'break';
+      minutes: number;
+      colorUp: string | null;
+      addon: boolean;
+      /** Intervalo criado sozinho pelo app para o add-on (some se o período de rebuy mudar). */
+      addedForAddon?: boolean;
+    };
 
 export type StructureInput = {
   players: number;
