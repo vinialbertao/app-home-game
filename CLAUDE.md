@@ -225,5 +225,9 @@ Decisões tomadas:
   são divididos por igual (16 → 8 e 8; 17 → 9 e 8). O host fica na mesa 1 (é o dealer dela). Balanceamento
   quando uma mesa tem 2 ou mais jogadores a mais que outra: o app sorteia quem muda (nunca o dealer). Quando os
   que sobram cabem em menos mesas, a mesa de número mais alto é desfeita; na mesa final, novo sorteio (25/11).
+- Torneio, "Caiu": host e dealer de cada mesa tocam no nome de quem perdeu tudo e em "Caiu". No período de
+  rebuy, o app pergunta "Vai dar rebuy?": Sim registra o rebuy (respeitando o máximo por pessoa) e ele continua;
+  Não elimina. Depois do intervalo do add-on, "Caiu" só elimina. O jogador vê na tela dele quanto já gastou
+  (buy-in + rebuys + add-on), que é o que ele deve ao host (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.

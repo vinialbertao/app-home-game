@@ -42,7 +42,6 @@ export function usePlayers(groupId: string) {
         .from('players')
         .select('id, name, pix_key, active, profile_id, profiles(public_id)')
         .eq('group_id', groupId)
-        .is('archived_at', null)
         .order('active', { ascending: false })
         .order('name');
       if (error) throw error;
