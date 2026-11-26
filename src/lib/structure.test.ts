@@ -5,6 +5,7 @@ import {
   distributeStack,
   generateStructure,
   levelNumbers,
+  placeBreaks,
   stackTotal,
   stacksAvailable,
   structureMinutes,
@@ -139,5 +140,54 @@ describe('checkStructure', () => {
       'Nível 1: o big blind não pode ser menor que o small.',
       'Intervalo: a duração precisa ser de 1 a 240 minutos.',
     ]);
+  });
+});
+
+describe('placeBreaks', () => {
+  const lvl = (bb: number, minutes = 20): StructureLevel => ({
+    kind: 'level',
+    smallBlind: bb / 2,
+    bigBlind: bb,
+    ante: 0,
+    minutes,
+  });
+  const levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => lvl(n * 100));
+  const breakAfter = (l: StructureLevel[]) => {
+    const numbers = levelNumbers(l);
+    return l.flatMap((x, i) => (x.kind === 'break' ? [numbers[i - 1]] : []));
+  };
+
+  it('intervalo a cada 1h com níveis de 20 min: depois dos níveis 3, 6 e 9', () => {
+    expect(breakAfter(placeBreaks(levels, 60, 10))).toEqual([3, 6, 9]);
+  });
+  it('a cada 2h: depois dos níveis 6; a cada 1h30: depois do 5 (100 min) e do 9 (180 min)', () => {
+    expect(breakAfter(placeBreaks(levels, 120, 10))).toEqual([6]);
+    expect(breakAfter(placeBreaks(levels, 90, 10))).toEqual([5, 9]);
+  });
+  it('troca os intervalos antigos, com a duração nova', () => {
+    const old: StructureLevel[] = [lvl(100), { kind: 'break', minutes: 5, colorUp: null, addon: false }, ...levels];
+    const result = placeBreaks(old, 60, 15);
+    expect(breakAfter(result)).toEqual([3, 6, 9]);
+    expect(result.filter((x) => x.kind === 'break').every((x) => x.minutes === 15)).toBe(true);
+    expect(result.filter((x) => x.kind === 'level')).toHaveLength(11);
+  });
+  it('sem intervalo: só os níveis', () => {
+    expect(placeBreaks(levels, null, 10)).toEqual(levels);
+  });
+  it('a troca de fichas vai para o primeiro intervalo novo depois do mesmo nível', () => {
+    const old: StructureLevel[] = [
+      ...levels.slice(0, 3),
+      { kind: 'break', minutes: 10, colorUp: 'Trocar as brancas', addon: false },
+      ...levels.slice(3),
+    ];
+    const result = placeBreaks(old, 120, 10);
+    const breaks = result.filter((x) => x.kind === 'break');
+    expect(breaks).toEqual([{ kind: 'break', minutes: 10, colorUp: 'Trocar as brancas', addon: false }]);
+  });
+  it('o gerador respeita o intervalo escolhido (sem intervalo, só o do add-on na 1ª hora)', () => {
+    const every2h = generateStructure({ ...base, breakEveryMinutes: 120 });
+    expect(breakAfter(every2h.levels).slice(0, 2)).toEqual([6, 12]); // rebuy e add-on até o 1º intervalo
+    const none = generateStructure({ ...base, breakEveryMinutes: null });
+    expect(breakAfter(none.levels)).toEqual([3]);
   });
 });

@@ -22,6 +22,7 @@ import {
   checkStructure,
   generateStructure,
   levelNumbers,
+  placeBreaks,
   stacksAvailable,
   stackTotal,
   structureMinutes,
@@ -31,9 +32,11 @@ import {
 import {
   checkKit,
   checkSettings,
+  DEFAULT_BREAKS,
   draftFromGenerated,
   estimatedPool,
   markAddonBreak,
+  type BreakSettings,
   type SetupInput,
   type TournamentDraft,
   type TournamentSettings,
@@ -43,6 +46,19 @@ import { useGroupKit } from '@/services/kits';
 import { usePlayers } from '@/services/players';
 import { useDeleteStructure, useGroupStructures, useSaveStructure, type SavedStructure } from '@/services/structures';
 import { colors, radius, spacing } from '@/theme';
+
+/** Opções de "intervalo a cada" (minutos de jogo; 'none' = sem intervalo). */
+type BreakEvery = 'none' | '60' | '90' | '120' | '180';
+const BREAK_OPTIONS: { value: BreakEvery; label: string }[] = [
+  { value: 'none', label: 'Sem' },
+  { value: '60', label: '1h' },
+  { value: '90', label: '1h30' },
+  { value: '120', label: '2h' },
+  { value: '180', label: '3h' },
+];
+const toBreakEvery = (minutes: number | null): BreakEvery =>
+  minutes === null ? 'none' : (BREAK_OPTIONS.find((o) => o.value === String(minutes))?.value ?? '60');
+const fromBreakEvery = (value: BreakEvery): number | null => (value === 'none' ? null : Number(value));
 
 type Editing = { draft: TournamentDraft; warnings: string[]; savedId: string | null; name: string };
 
@@ -138,6 +154,8 @@ function SetupForm({
   const [addonValue, setAddonValue] = useState<Cents | null>(5000);
   const [levelMinutes, setLevelMinutes] = useState<number | null>(20);
   const [hours, setHours] = useState<number | null>(4);
+  const [breakEvery, setBreakEvery] = useState<BreakEvery>('60');
+  const [breakMinutes, setBreakMinutes] = useState<number | null>(DEFAULT_BREAKS.minutes);
   const [error, setError] = useState<string | null>(null);
 
   function generate() {
@@ -146,7 +164,10 @@ function SetupForm({
     if (!levelMinutes || levelMinutes < 5 || levelMinutes > 60) return setError('Cada nível dura de 5 a 60 minutos.');
     if (!hours || hours < 1 || hours > 12) return setError('A duração é de 1 a 12 horas.');
     if (addon === 'yes' && (!addonValue || addonValue <= 0)) return setError('Digite o valor do add-on.');
+    if (breakEvery !== 'none' && (!breakMinutes || breakMinutes < 1 || breakMinutes > 120))
+      return setError('Cada intervalo dura de 1 a 120 minutos.');
     setError(null);
+    const breaks: BreakSettings = { everyMinutes: fromBreakEvery(breakEvery), minutes: breakMinutes ?? DEFAULT_BREAKS.minutes };
 
     const input: SetupInput = {
       players,
@@ -155,12 +176,15 @@ function SetupForm({
       addon: { enabled: addon === 'yes', cents: addon === 'yes' ? (addonValue ?? 0) : 0 },
       levelMinutes,
       targetMinutes: hours * 60,
+      breaks,
     };
     const generated = generateStructure({
       players,
       kit,
       levelMinutes,
       targetMinutes: hours * 60,
+      breakEveryMinutes: breaks.everyMinutes,
+      breakMinutes: breaks.minutes,
       rebuy: input.rebuy,
       addon: { enabled: input.addon.enabled },
     });
@@ -249,6 +273,17 @@ function SetupForm({
 
         <NumberField label="Minutos de cada nível" value={levelMinutes} onChange={setLevelMinutes} />
         <NumberField label="Duração do torneio (horas)" value={hours} onChange={setHours} />
+
+        <AppText variant="label">Intervalo a cada</AppText>
+        <SegmentedControl
+          accessibilityLabel="Intervalo a cada quantas horas"
+          options={BREAK_OPTIONS}
+          value={breakEvery}
+          onChange={setBreakEvery}
+        />
+        {breakEvery !== 'none' ? (
+          <NumberField label="Minutos de cada intervalo" value={breakMinutes} onChange={setBreakMinutes} />
+        ) : null}
       </View>
       <FormMessage message={error} />
     </Screen>
@@ -302,6 +337,26 @@ function DraftEditor({
         },
       ),
     }));
+  }
+
+  const breaks = settings.breaks ?? DEFAULT_BREAKS;
+
+  /** Muda "intervalo a cada" ou a duração: refaz todos os intervalos da lista de níveis. */
+  function setBreaks(next: BreakSettings) {
+    setDraft((current) => {
+      const nextSettings = { ...current.settings, breaks: next };
+      if (next.minutes < 1 || next.minutes > 120) return { ...current, settings: nextSettings };
+      return {
+        settings: nextSettings,
+        levels: markAddonBreak(
+          placeBreaks(current.levels, next.everyMinutes, next.minutes),
+          nextSettings.rebuy.untilLevel,
+          nextSettings.addon.enabled,
+          { insert: true },
+        ),
+      };
+    });
+    setOpenRow(null);
   }
 
   function setStackCount(index: number, count: number | null) {
@@ -474,6 +529,29 @@ function DraftEditor({
             />
           </>
         ) : null}
+      </Card>
+
+      {/* Intervalos */}
+      <Card>
+        <AppText variant="heading">Intervalos</AppText>
+        <AppText variant="label">Intervalo a cada</AppText>
+        <SegmentedControl
+          accessibilityLabel="Intervalo a cada quantas horas"
+          options={BREAK_OPTIONS}
+          value={toBreakEvery(breaks.everyMinutes)}
+          onChange={(v) => setBreaks({ ...breaks, everyMinutes: fromBreakEvery(v) })}
+        />
+        {breaks.everyMinutes !== null ? (
+          <NumberField
+            label="Minutos de cada intervalo"
+            value={breaks.minutes}
+            onChange={(minutes) => setBreaks({ ...breaks, minutes: minutes ?? 0 })}
+          />
+        ) : null}
+        <AppText variant="caption">
+          Mudar aqui refaz os intervalos da lista de níveis (as trocas de fichas vão junto). O intervalo do add-on
+          continua logo depois do período de rebuy.
+        </AppText>
       </Card>
 
       {/* Níveis */}

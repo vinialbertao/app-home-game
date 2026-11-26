@@ -126,6 +126,8 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
 - Estrutura do torneio: `structures.settings` guarda `TournamentSettings` (`src/lib/tournament.ts`: entradas,
   stack por cor, relógio da jogada, porcentagens da premiação); `levels` guarda níveis e intervalos (com color up).
   O intervalo do add-on não é gravado: é o primeiro intervalo depois de `rebuy.untilLevel` (`markAddonBreak`).
+  `settings.breaks` (`everyMinutes` null = sem intervalo, `minutes`) guarda "intervalo a cada"; mudar isso no
+  editor refaz os intervalos com `placeBreaks` (color up vai junto) e depois `markAddonBreak`.
   Gerador em `src/lib/structure.ts`, premiação em `src/lib/prizes.ts`.
 - Status do cash: `live` (mesa) → `counting` (contagem/conferência) → `finished` (acerto salvo).
 - Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
@@ -211,6 +213,8 @@ Decisões tomadas:
   15–17: 6; 18–20: 7; 21–24: 8. Sem taxa da casa (25/11).
 - Torneio, acerto: no final o app calcula quanto cada um gastou (buy-in + rebuys + add-on); todos mandam para o
   host e o host paga os prêmios (quem ganhou prêmio recebe a diferença). Não é Pix entre os jogadores (25/11).
+- Torneio, intervalos: o host escolhe "intervalo a cada" (sem, 1h, 1h30, 2h, 3h de jogo) e a duração, ao gerar e
+  no editor; o app já marca os intervalos na lista de níveis, sem precisar apagar e adicionar à mão (25/11).
 - Torneio, entradas: rebuy e jogador atrasado só até o fim do período de rebuy; depois do intervalo do add-on
   não entra mais ninguém, nem rebuy. O host registra o rebuy quando a pessoa pede, mesmo sem estar zerada (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.

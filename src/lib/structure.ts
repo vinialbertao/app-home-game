@@ -26,8 +26,8 @@ export type StructureInput = {
   levelMinutes: number;
   /** Duração desejada do torneio inteiro, em minutos (ex.: 240). */
   targetMinutes: number;
-  /** De quanto em quanto tempo tem intervalo (padrão 60 min) e quanto dura (padrão 10 min). */
-  breakEveryMinutes?: number;
+  /** De quanto em quanto tempo tem intervalo (padrão 60 min; null = sem intervalo) e quanto dura (padrão 10 min). */
+  breakEveryMinutes?: number | null;
   breakMinutes?: number;
   rebuy: { enabled: boolean; maxPerPlayer: number | null };
   addon: { enabled: boolean };
@@ -139,7 +139,7 @@ export function generateStructure(input: StructureInput): Structure {
   const warnings: string[] = [];
   const kit = sortChips(input.kit.filter((c) => c.quantity > 0 && c.value > 0));
   const players = Math.max(2, Math.round(input.players));
-  const breakEvery = input.breakEveryMinutes ?? 60;
+  const breakEvery = input.breakEveryMinutes === undefined ? 60 : input.breakEveryMinutes;
   const breakMinutes = input.breakMinutes ?? 10;
   const levelMinutes = Math.max(1, Math.round(input.levelMinutes));
 
@@ -203,10 +203,11 @@ export function generateStructure(input: StructureInput): Structure {
   }
 
   // ---------- Níveis ----------
-  const breaksCount = Math.floor(input.targetMinutes / (breakEvery + breakMinutes));
+  const breaksCount = breakEvery === null ? 0 : Math.floor(input.targetMinutes / (breakEvery + breakMinutes));
   const playMinutes = Math.max(levelMinutes * 4, input.targetMinutes - breaksCount * breakMinutes);
   const levelCount = Math.max(4, Math.round(playMinutes / levelMinutes));
-  const levelsPerBreak = Math.max(1, Math.round(breakEvery / levelMinutes));
+  // Sem intervalos, o período de rebuy continua sendo a primeira hora.
+  const levelsPerBreak = Math.max(1, Math.round((breakEvery ?? 60) / levelMinutes));
   // Mais 3 níveis depois da duração desejada, para o torneio não "acabar a estrutura" se demorar.
   const totalLevels = levelCount + 3;
 
@@ -229,7 +230,7 @@ export function generateStructure(input: StructureInput): Structure {
 
     const isLast = i === totalLevels;
     const addonBreak = rebuyUntilLevel !== null && i === rebuyUntilLevel;
-    const regularBreak = i % levelsPerBreak === 0;
+    const regularBreak = breakEvery !== null && i % levelsPerBreak === 0;
     if (!isLast && (addonBreak || regularBreak)) {
       // Color up: some a menor ficha quando o próximo small blind já usa a próxima cor
       // (e pelo menos 4 fichas da menor). Sempre sobram pelo menos 2 cores.
@@ -246,6 +247,50 @@ export function generateStructure(input: StructureInput): Structure {
   }
 
   return { startingStack, stack, levels, rebuyUntilLevel, expectedChipsInPlay, warnings };
+}
+
+/**
+ * Refaz os intervalos de uma estrutura: um a cada `everyMinutes` de jogo (somando os minutos dos níveis),
+ * todos com `breakMinutes`. null = sem intervalos. Nunca põe intervalo depois do último nível.
+ * As trocas de fichas (color up) dos intervalos antigos vão para o primeiro intervalo novo depois do mesmo
+ * nível (trocar mais tarde não atrapalha; mais cedo poderia faltar ficha pequena para os blinds).
+ * O intervalo do add-on é marcado depois, por `markAddonBreak`.
+ */
+export function placeBreaks(
+  levels: StructureLevel[],
+  everyMinutes: number | null,
+  breakMinutes: number,
+): StructureLevel[] {
+  const colorUps: { afterLevel: number; text: string }[] = [];
+  const plain: StructureLevel[] = [];
+  let count = 0;
+  for (const level of levels) {
+    if (level.kind === 'level') {
+      plain.push(level);
+      count++;
+    } else if (level.colorUp) {
+      colorUps.push({ afterLevel: count, text: level.colorUp });
+    }
+  }
+
+  const result: StructureLevel[] = [];
+  let played = 0;
+  let pending = 0; // próximo color up ainda não colocado
+  plain.forEach((level, i) => {
+    result.push(level);
+    const before = played;
+    played += level.minutes;
+    const isLast = i === plain.length - 1;
+    if (everyMinutes === null || everyMinutes <= 0 || isLast) return;
+    if (Math.floor(played / everyMinutes) <= Math.floor(before / everyMinutes)) return;
+    const texts: string[] = [];
+    while (pending < colorUps.length && colorUps[pending].afterLevel <= i + 1) {
+      texts.push(colorUps[pending].text);
+      pending++;
+    }
+    result.push({ kind: 'break', minutes: breakMinutes, colorUp: texts.length ? texts.join('; ') : null, addon: false });
+  });
+  return result;
 }
 
 /** Minutos totais da estrutura (níveis + intervalos). */

@@ -39,9 +39,15 @@ export type TournamentSettings = {
   stack: StackChip[];
   levelMinutes: number;
   targetMinutes: number;
+  /** Intervalo a cada quantos minutos de jogo (null = sem intervalo) e quanto dura. Estruturas antigas não têm. */
+  breaks?: BreakSettings;
   shotClock: ShotClockSettings;
   prizePercents: number[];
 };
+
+export type BreakSettings = { everyMinutes: number | null; minutes: number };
+
+export const DEFAULT_BREAKS: BreakSettings = { everyMinutes: 60, minutes: 10 };
 
 /** Estrutura completa em edição: configurações + níveis (com o intervalo do add-on marcado). */
 export type TournamentDraft = { settings: TournamentSettings; levels: StructureLevel[] };
@@ -128,6 +134,13 @@ export function checkSettings(settings: TournamentSettings, levelCount: number):
       problems.push(`O período de rebuy precisa terminar entre o nível 1 e o ${levelCount}.`);
     }
   }
+  if (settings.breaks) {
+    const { everyMinutes, minutes } = settings.breaks;
+    if (everyMinutes !== null && (everyMinutes < 15 || everyMinutes > 600))
+      problems.push('O intervalo precisa ser a cada 15 minutos a 10 horas.');
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 120)
+      problems.push('Cada intervalo dura de 1 a 120 minutos.');
+  }
   if (settings.rebuy.maxPerPlayer !== null && settings.rebuy.maxPerPlayer < 1) {
     problems.push('O máximo de rebuys por pessoa precisa ser 1 ou mais (ou sem limite).');
   }
@@ -152,6 +165,7 @@ export type SetupInput = {
   addon: { enabled: boolean; cents: Cents };
   levelMinutes: number;
   targetMinutes: number;
+  breaks?: BreakSettings;
 };
 
 /** Junta o que o host digitou com a estrutura gerada, num rascunho pronto para editar. */
@@ -170,6 +184,7 @@ export function draftFromGenerated(
       stack: generated.stack,
       levelMinutes: input.levelMinutes,
       targetMinutes: input.targetMinutes,
+      breaks: input.breaks ?? { ...DEFAULT_BREAKS },
       shotClock: { ...DEFAULT_SHOT_CLOCK },
       prizePercents: defaultPrizes(input.players),
     },
