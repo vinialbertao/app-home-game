@@ -2,11 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 
 import type { StructureLevel } from './structure';
 import {
+  canRebuyMore,
   checkKit,
   checkSettings,
   DEFAULT_SHOT_CLOCK,
   estimatedPool,
   markAddonBreak,
+  rebuyOpen,
   type TournamentSettings,
 } from './tournament';
 
@@ -119,5 +121,26 @@ describe('checkKit', () => {
       addon: { enabled: false, cents: 0, chips: 0 },
     });
     expect(result).toEqual({ blocking: null, warning: null });
+  });
+});
+
+describe('rebuyOpen', () => {
+  const levels = [level(50), level(100), pause, level(200)];
+  const s = { rebuy: { enabled: true, maxPerPlayer: null, untilLevel: 2 } };
+  it('antes de começar, aberto', () => expect(rebuyOpen(s, levels, null)).toBe(true));
+  it('no último nível de rebuy, aberto', () => expect(rebuyOpen(s, levels, 2)).toBe(true));
+  it('no intervalo do add-on, ainda aberto', () => expect(rebuyOpen(s, levels, 3)).toBe(true));
+  it('no nível seguinte, fechado', () => expect(rebuyOpen(s, levels, 4)).toBe(false));
+  it('sem rebuy, sempre fechado', () =>
+    expect(rebuyOpen({ rebuy: { enabled: false, maxPerPlayer: null, untilLevel: 2 } }, levels, null)).toBe(false));
+});
+
+describe('canRebuyMore', () => {
+  it('sem limite', () =>
+    expect(canRebuyMore({ rebuy: { enabled: true, maxPerPlayer: null, untilLevel: 2 } }, 5)).toBe(true));
+  it('com limite 1', () => {
+    const s = { rebuy: { enabled: true, maxPerPlayer: 1, untilLevel: 2 } };
+    expect(canRebuyMore(s, 0)).toBe(true);
+    expect(canRebuyMore(s, 1)).toBe(false);
   });
 });

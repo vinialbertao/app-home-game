@@ -78,6 +78,8 @@ function RootNavigator() {
         <Stack.Screen name="groups/[groupId]/kit" options={{ title: 'Kit de fichas' }} />
         <Stack.Screen name="groups/[groupId]/cash" options={{ title: 'Novo cash' }} />
         <Stack.Screen name="groups/[groupId]/tournament" options={{ title: 'Torneio' }} />
+        <Stack.Screen name="groups/[groupId]/tournament-start" options={{ title: 'Quem vai jogar' }} />
+        <Stack.Screen name="games/[gameId]/tournament" options={{ title: 'Torneio' }} />
         <Stack.Screen name="games/[gameId]/index" options={{ title: 'Cash' }} />
         <Stack.Screen name="games/[gameId]/player/[gamePlayerId]" options={{ title: 'Jogador' }} />
         <Stack.Screen name="games/[gameId]/add-player" options={{ title: 'Adicionar jogador', presentation: 'modal' }} />

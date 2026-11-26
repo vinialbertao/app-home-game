@@ -19,6 +19,9 @@ export default function GameScreen() {
       </Screen>
     );
   }
+  if (game.data.type === 'tournament') {
+    return <Redirect href={{ pathname: '/games/[gameId]/tournament', params: { gameId } }} />;
+  }
   if (game.data.status === 'counting') {
     return <Redirect href={{ pathname: '/games/[gameId]/count', params: { gameId } }} />;
   }

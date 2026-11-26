@@ -190,3 +190,24 @@ export function draftFromGenerated(
     },
   };
 }
+
+/**
+ * O período de rebuy está aberto? Igual à regra do banco (`private.rebuy_open`): antes de começar, ou enquanto
+ * o nível atual (posição na lista, contando intervalos) não passou do último nível de rebuy. O intervalo do
+ * add-on, logo depois, ainda conta como aberto.
+ */
+export function rebuyOpen(
+  settings: Pick<TournamentSettings, 'rebuy'>,
+  levels: StructureLevel[],
+  currentPosition: number | null,
+): boolean {
+  if (!settings.rebuy.enabled || settings.rebuy.untilLevel === null) return false;
+  if (currentPosition === null) return true;
+  const played = levels.slice(0, currentPosition).filter((l) => l.kind === 'level').length;
+  return played <= settings.rebuy.untilLevel;
+}
+
+/** Ainda pode fazer rebuy? (respeita o máximo por pessoa) */
+export function canRebuyMore(settings: Pick<TournamentSettings, 'rebuy'>, rebuysDone: number): boolean {
+  return settings.rebuy.maxPerPlayer === null || rebuysDone < settings.rebuy.maxPerPlayer;
+}

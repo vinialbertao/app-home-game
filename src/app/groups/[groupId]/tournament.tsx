@@ -44,6 +44,7 @@ import {
 import { useGroup } from '@/services/groups';
 import { useGroupKit } from '@/services/kits';
 import { usePlayers } from '@/services/players';
+import { setPendingTournament } from '@/services/tournamentDraft';
 import { useDeleteStructure, useGroupStructures, useSaveStructure, type SavedStructure } from '@/services/structures';
 import { colors, radius, spacing } from '@/theme';
 
@@ -167,7 +168,10 @@ function SetupForm({
     if (breakEvery !== 'none' && (!breakMinutes || breakMinutes < 1 || breakMinutes > 120))
       return setError('Cada intervalo dura de 1 a 120 minutos.');
     setError(null);
-    const breaks: BreakSettings = { everyMinutes: fromBreakEvery(breakEvery), minutes: breakMinutes ?? DEFAULT_BREAKS.minutes };
+    const breaks: BreakSettings = {
+      everyMinutes: fromBreakEvery(breakEvery),
+      minutes: breakMinutes ?? DEFAULT_BREAKS.minutes,
+    };
 
     const input: SetupInput = {
       players,
@@ -415,6 +419,17 @@ function DraftEditor({
     );
   }
 
+  function startTournament() {
+    const problems = [...checkStructure(levels), ...checkSettings(settings, levelCount)];
+    if (kitCheck.blocking) problems.push(kitCheck.blocking);
+    const prizeProblem = checkPrizePercents(settings.prizePercents);
+    if (prizeProblem) problems.push(prizeProblem);
+    if (problems.length) return setMessage({ text: problems.join('\n'), tone: 'error' });
+    setMessage(null);
+    setPendingTournament({ groupId, name: name.trim() || 'Torneio', draft });
+    router.push({ pathname: '/groups/[groupId]/tournament-start', params: { groupId } });
+  }
+
   const pool = estimatedPool(settings);
   const stacksInKit = stacksAvailable(kit, settings.stack);
 
@@ -422,8 +437,10 @@ function DraftEditor({
     <Screen
       footer={
         <>
+          <Button title="Escolher jogadores e começar" onPress={startTournament} />
           <Button
             title={savedId ? 'Salvar alterações' : 'Salvar estrutura do grupo'}
+            variant="secondary"
             onPress={saveStructure}
             loading={save.isPending}
           />

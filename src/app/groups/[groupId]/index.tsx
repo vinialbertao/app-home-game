@@ -43,7 +43,7 @@ export default function GroupScreen() {
   const activePlayers = players.data?.filter((p) => p.active) ?? [];
   const linkedIds = new Set(players.data?.map((p) => p.profileId).filter(Boolean));
   const pendingCount = members.data?.filter((m) => !linkedIds.has(m.userId)).length ?? 0;
-  const liveGames = games.data?.filter((g) => g.status === 'live' || g.status === 'counting') ?? [];
+  const liveGames = games.data?.filter((g) => ['setup', 'live', 'counting'].includes(g.status)) ?? [];
   const finishedGames = games.data?.filter((g) => g.status === 'finished') ?? [];
 
   async function copyInviteCode() {

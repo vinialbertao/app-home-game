@@ -20,6 +20,7 @@ export const queryKeys = {
   kits: (groupId: string) => ['kits', groupId] as const,
   structures: (groupId: string) => ['structures', groupId] as const,
   game: (gameId: string) => ['game', gameId] as const,
+  tournament: (gameId: string) => ['tournament', gameId] as const,
   groupGames: (groupId: string) => ['group-games', groupId] as const,
   groupSettlements: (groupId: string) => ['group-settlements', groupId] as const,
 };

@@ -44,6 +44,8 @@ src/app/            telas (Expo Router: cada arquivo é uma rota)
   games/[gameId]/count/            Contagem por cor e conferência; adjust.tsx = ajuste do host
   games/[gameId]/settlement.tsx    Acerto: resultado, Pix (pix/[settlementId] = QR), Paguei/Recebi, resumo
   groups/[groupId]/tournament.tsx  Torneio: gerar/editar a estrutura (5a) e estruturas salvas do grupo
+  groups/[groupId]/tournament-start.tsx  Quem vai jogar, lugares por mesa, sortear (cria o torneio)
+  games/[gameId]/tournament.tsx    Torneio em jogo: mesas, dealer, "Caiu", balanceamento, mesa final
   profile.tsx       Meus dados (foto, nome, ID, Pix, histórico)
 src/components/     componentes visuais reutilizáveis (importe de '@/components')
 src/lib/            regras e cálculos puros, sem React e sem Supabase, sempre com testes
@@ -129,6 +131,11 @@ Nada que não seja tela fica dentro de `src/app/`. Import com alias `@/` (= `src
   `settings.breaks` (`everyMinutes` null = sem intervalo, `minutes`) guarda "intervalo a cada"; mudar isso no
   editor refaz os intervalos com `placeBreaks` (color up vai junto) e depois `markAddonBreak`.
   Gerador em `src/lib/structure.ts`, premiação em `src/lib/prizes.ts`.
+- Torneio em jogo: `start_tournament` (copia a estrutura escondida, cria jogo em `setup`, jogadores e buy-ins),
+  `set_seating` (troca todos os lugares e dealers de uma vez; mesa que não vem fica inativa),
+  `player_busted(gp, rebuy)` ("Caiu": host ou dealer da mesa do jogador; rebuy só com `private.rebuy_open`),
+  `undo_elimination` (só a última). `tables.dealer_game_player_id`; quem é eliminado deixa de ser dealer (trigger).
+  `games.current_level` = posição na lista de níveis contando intervalos. Lógica das mesas em `src/lib/seating.ts`.
 - Status do cash: `live` (mesa) → `counting` (contagem/conferência) → `finished` (acerto salvo).
 - Blinds dos níveis são em fichas, não em reais. Dinheiro no banco é sempre `bigint` em centavos (`*_cents`).
 

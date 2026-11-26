@@ -49,6 +49,7 @@ export type Settlement = {
 };
 
 export type CashGame = {
+  type: 'cash' | 'tournament';
   id: string;
   groupId: string;
   status: GameStatus;
@@ -154,6 +155,7 @@ async function fetchCashGame(gameId: string, userId: string): Promise<CashGame> 
     groupId: game.group_id,
     status: game.status as GameStatus,
     hostId: game.host_id,
+    type: game.type as CashGame['type'],
     isHost: game.host_id === userId,
     myGamePlayerId: gamePlayers.find((p) => p.profileId === userId)?.id ?? null,
     settings: (game.settings ?? {}) as CashSettings,

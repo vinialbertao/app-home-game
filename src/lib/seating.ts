@@ -154,3 +154,42 @@ export function seededRandom(seed: number): Random {
     return ((state >>> 0) % 1_000_000) / 1_000_000;
   };
 }
+
+/** Aplica uma mudança de mesa (balanceamento ou desfazer mesa). */
+export function applyMoves(tables: SeatedTable[], moves: Move[]): SeatedTable[] {
+  let result = tables.map((t) => ({ ...t, seats: [...t.seats] }));
+  for (const move of moves) {
+    result = result.map((t) => {
+      if (t.number === move.fromTable) return { ...t, seats: t.seats.filter((s) => s.playerId !== move.playerId) };
+      if (t.number === move.toTable)
+        return { ...t, seats: [...t.seats, { seat: move.toSeat, playerId: move.playerId }] };
+      return t;
+    });
+  }
+  return result
+    .filter((t) => t.seats.length > 0)
+    .map((t) => ({
+      ...t,
+      dealerId: t.seats.some((s) => s.playerId === t.dealerId) ? t.dealerId : null,
+      seats: [...t.seats].sort((a, b) => a.seat - b.seat),
+    }));
+}
+
+/** Senta de volta quem teve a eliminação desfeita: no menor lugar livre da mesa com menos gente. */
+export function seatBack(tables: SeatedTable[], playerId: string, maxSeats = DEFAULT_MAX_SEATS): SeatedTable[] {
+  if (tables.length === 0) return [{ number: 1, seats: [{ seat: 1, playerId }], dealerId: null }];
+  const target = tables.reduce((a, b) => (b.seats.length < a.seats.length ? b : a));
+  const seat = freeSeat(target, maxSeats) ?? target.seats.length + 1;
+  return tables.map((t) =>
+    t.number === target.number ? { ...t, seats: [...t.seats, { seat, playerId }].sort((a, b) => a.seat - b.seat) } : t,
+  );
+}
+
+/** Tira um jogador das mesas (quem caiu). */
+export function removeFromTables(tables: SeatedTable[], playerId: string): SeatedTable[] {
+  return tables.map((t) => ({
+    ...t,
+    seats: t.seats.filter((s) => s.playerId !== playerId),
+    dealerId: t.dealerId === playerId ? null : t.dealerId,
+  }));
+}

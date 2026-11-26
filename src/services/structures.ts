@@ -9,7 +9,7 @@ import { getSupabase } from './supabase';
 
 export type SavedStructure = TournamentDraft & { id: string; name: string; updatedAt: string };
 
-type LevelRow = {
+export type LevelRow = {
   position: number;
   is_break: boolean;
   small_blind: number | null;
@@ -19,7 +19,7 @@ type LevelRow = {
   color_up: string | null;
 };
 
-function fromRows(rows: LevelRow[], settings: TournamentSettings): StructureLevel[] {
+export function fromRows(rows: LevelRow[], settings: TournamentSettings): StructureLevel[] {
   const levels = [...rows]
     .sort((a, b) => a.position - b.position)
     .map((row): StructureLevel =>
@@ -36,9 +36,9 @@ function fromRows(rows: LevelRow[], settings: TournamentSettings): StructureLeve
   return markAddonBreak(levels, settings.rebuy.untilLevel, settings.addon.enabled);
 }
 
-function toRows(structureId: string, levels: StructureLevel[]) {
+/** Níveis no formato da tabela `levels` (sem structure_id). */
+export function levelRows(levels: StructureLevel[]) {
   return levels.map((level, i) => ({
-    structure_id: structureId,
     position: i + 1,
     is_break: level.kind === 'break',
     small_blind: level.kind === 'level' ? level.smallBlind : null,
@@ -115,7 +115,7 @@ export function useSaveStructure(groupId: string) {
         if (error) throw new Error('Não foi possível salvar a estrutura.');
         structureId = data.id;
       }
-      const { error: levelsError } = await supabase.from('levels').insert(toRows(structureId, draft.levels));
+      const { error: levelsError } = await supabase.from('levels').insert(levelRows(draft.levels).map((row) => ({ ...row, structure_id: structureId! })));
       if (levelsError) throw new Error('Não foi possível salvar os níveis.');
       return structureId;
     },

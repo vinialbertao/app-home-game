@@ -1,11 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  applyMoves,
   drawFinalTable,
   drawSeats,
   freeSeat,
   planBalance,
   planTableChange,
+  removeFromTables,
+  seatBack,
   seededRandom,
   shuffle,
   tableSizes,
@@ -187,5 +190,38 @@ describe('simulação: 14 jogadores, eliminações até a mesa final', () => {
     }
     expect(finalAt).toBe(9);
     expect(tables).toHaveLength(1);
+  });
+});
+
+describe('applyMoves', () => {
+  it('move o jogador e mantém os lugares em ordem', () => {
+    const result = applyMoves(
+      [table(1, ['a', 'b', 'c']), table(2, ['x'])],
+      [{ playerId: 'b', fromTable: 1, toTable: 2, toSeat: 2 }],
+    );
+    expect(result[0].seats.map((s) => s.playerId)).toEqual(['a', 'c']);
+    expect(result[1].seats).toEqual([
+      { seat: 1, playerId: 'x' },
+      { seat: 2, playerId: 'b' },
+    ]);
+  });
+  it('mesa desfeita some, e o dealer dela deixa de ser dealer', () => {
+    const result = applyMoves(
+      [table(1, ['a']), table(2, ['x'], 'x')],
+      [{ playerId: 'x', fromTable: 2, toTable: 1, toSeat: 2 }],
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].dealerId).toBeNull();
+  });
+});
+
+describe('seatBack e removeFromTables', () => {
+  it('quem volta senta na mesa com menos gente', () => {
+    const result = seatBack([table(1, ['a', 'b', 'c']), table(2, ['x', 'y'])], 'z');
+    expect(result[1].seats.map((s) => s.playerId)).toEqual(['x', 'y', 'z']);
+  });
+  it('tirar o dealer da mesa limpa o dealer', () => {
+    const result = removeFromTables([table(2, ['x', 'y'], 'x')], 'x');
+    expect(result[0]).toMatchObject({ dealerId: null, seats: [{ seat: 2, playerId: 'y' }] });
   });
 });
