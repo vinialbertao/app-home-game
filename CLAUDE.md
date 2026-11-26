@@ -173,9 +173,9 @@ No Windows do dono, depois de `git pull` use `npm ci` (não `npm install`): segu
 - [x] Fase 2 — Banco de dados: 17 tabelas, RLS testado (36 verificações), cliente no app; "Conectado ao servidor" conferido no iPhone em 24/11
 - [x] Fase 3 — Login, grupos, convite por código, jogadores (ligar conta), kit e Meus dados com foto; testada no iPhone com duas contas em 25/11
 - [x] Fase 4 — Cash game: config, mesa, contagem (cada um no seu celular), conferência, acerto com Pix, excluir jogo; testada com dois celulares em 25/11
-- [ ] Fase 5 — Torneio com várias mesas: 5a (gerador da estrutura) testada no iPhone em 25/11; faltam 5b, 5c e 5d
+- [ ] Fase 5 — Torneio com várias mesas: 5a e 5b testadas no iPhone; faltam 5c e 5d
   - [x] 5a — Gerador da estrutura (stack, níveis, intervalo a cada X horas, color up, premiação, relógio da jogada, salvar no grupo); testada no iPhone em 25/11
-  - [ ] 5b — Mesas
+  - [x] 5b — Mesas (sorteio, dealer, Começar torneio, Rebuy e Caiu, balanceamento, desfazer mesa, mesa final); testada no iPhone em 26/11
   - [ ] 5c — Torneio ao vivo
   - [ ] 5d — Resultado
 - [ ] Fase 6 — Painel por link (TV e celulares)
