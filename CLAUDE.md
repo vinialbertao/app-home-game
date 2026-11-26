@@ -221,5 +221,9 @@ Decisões tomadas:
   no editor; o app já marca os intervalos na lista de níveis, sem precisar apagar e adicionar à mão (25/11).
 - Torneio, entradas: rebuy e jogador atrasado só até o fim do período de rebuy; depois do intervalo do add-on
   não entra mais ninguém, nem rebuy. O host registra o rebuy quando a pessoa pede, mesmo sem estar zerada (25/11).
+- Torneio, mesas: no máximo 9 lugares por mesa (editável). Número de mesas = o mínimo que cabe, e os jogadores
+  são divididos por igual (16 → 8 e 8; 17 → 9 e 8). O host fica na mesa 1 (é o dealer dela). Balanceamento
+  quando uma mesa tem 2 ou mais jogadores a mais que outra: o app sorteia quem muda (nunca o dealer). Quando os
+  que sobram cabem em menos mesas, a mesa de número mais alto é desfeita; na mesa final, novo sorteio (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
