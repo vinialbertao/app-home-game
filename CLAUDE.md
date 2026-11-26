@@ -202,5 +202,12 @@ Decisões tomadas:
   O jogador usa o time bank na própria tela (o dealer usa por quem não tem o app). Tempo esgotado: o app só
   avisa "fold", quem aplica é o dealer. Time banks que sobram se perdem na eliminação. Esse relógio usa o tempo
   real do Supabase já na Fase 5 (25/11).
+- Torneio, premiação: editável o tempo todo (antes, durante e no acordo da mesa final; o total não muda).
+  Padrão com um pouco mais de premiados (~40%): até 5 jogadores 2 premiados; 6–8: 3; 9–11: 4; 12–14: 5;
+  15–17: 6; 18–20: 7; 21–24: 8. Sem taxa da casa (25/11).
+- Torneio, acerto: no final o app calcula quanto cada um gastou (buy-in + rebuys + add-on); todos mandam para o
+  host e o host paga os prêmios (quem ganhou prêmio recebe a diferença). Não é Pix entre os jogadores (25/11).
+- Torneio, entradas: rebuy e jogador atrasado só até o fim do período de rebuy; depois do intervalo do add-on
+  não entra mais ninguém, nem rebuy. O host registra o rebuy quando a pessoa pede, mesmo sem estar zerada (25/11).
 Decisões em aberto: data do torneio de teste, nome definitivo.
 Ícone e splash ainda são os do template do Expo.
